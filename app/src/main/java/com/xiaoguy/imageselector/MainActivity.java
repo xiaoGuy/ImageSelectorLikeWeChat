@@ -16,7 +16,6 @@ import android.os.Message;
 import android.provider.MediaStore.Images.Media;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.design.widget.BottomSheetDialog;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -31,8 +30,9 @@ import com.xiaoguy.imageselector.bean.ImageFolder;
 import com.xiaoguy.imageselector.ui.DividerItemDecoration;
 import com.xiaoguy.imageselector.ui.ImageFolderAdapter;
 import com.xiaoguy.imageselector.ui.ImageListAdapter;
-import com.xiaoguy.imageselector.ui.StrongBottomSheetDialog;
 import com.xiaoguy.imageselector.ui.SimpleGridItemDecoration;
+import com.xiaoguy.imageselector.ui.StrongBottomSheetDialog;
+import com.xiaoguy.imageselector.util.ScreenUtil;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_PERMISSION_SETTING = 1;
 
     private ProgressDialog mProgressDialog;
-    private BottomSheetDialog mBottomSheetDialog;
+    private StrongBottomSheetDialog mBottomSheetDialog;
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -218,6 +218,9 @@ public class MainActivity extends AppCompatActivity {
             recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
             recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL_LIST));
 
+            final int height = ScreenUtil.getScreenHeight(this) / 2;
+            mBottomSheetDialog.setMaxHeight(height);
+            mBottomSheetDialog.setPeekHeight(height);
             mBottomSheetDialog.setContentView(recyclerView);
         }
         mBottomSheetDialog.show();

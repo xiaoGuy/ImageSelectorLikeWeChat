@@ -1,14 +1,16 @@
 package com.xiaoguy.imageselector.ui;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.drawable.Drawable;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
@@ -24,6 +26,9 @@ import java.util.List;
  */
 
 public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
+
+    private static final float SELECTED_ALPHA = 0.5F;
+    private static final float UNSELECTED_ALPHA = 1.0F;
 
     /**
      * 最多可以选中的图片数量
@@ -65,23 +70,32 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
 
     @Override
     public void onBindViewHolder(final ImageItemHolder holder, final int position) {
-        if (mCameraEnabled && position == 0) {
-            holder.mImage.setImageResource(R.mipmap.ic_launcher);
-            holder.mCheckBox.setVisibility(View.GONE);
-            holder.mImage.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
+//        if (mCameraEnabled && position == 0) {
+//            holder.mImage.setImageResource(R.mipmap.ic_launcher);
+//            holder.mCheckBox.setVisibility(View.GONE);
+//            holder.mImage.setOnClickListener(new OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//
+//                }
+//            });
+//            return;
+//        }
 
-                }
-            });
-            return;
-        }
+        final String imagePath = mImages.get(position);
 
         Glide.with(mContext).
-                load(new File(mImages.get(position))).
-                placeholder(R.drawable.ic_placeholder).
+                load(new File(imagePath)).
+                placeholder(R.drawable.shape_placeholder).
                 error(R.mipmap.ic_launcher).
                 into(holder.mImage);
+
+        // 还原选中状态
+        if (mSelectedImages.contains(imagePath)) {
+            holder.mCheckBox.setChecked(true);
+        } else {
+            holder.mCheckBox.setChecked(false);
+        }
 
         holder.mImage.setOnClickListener(new OnClickListener() {
             @Override
@@ -90,10 +104,12 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
             }
         });
 
-        holder.mCheckBox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+        // 不使用 OnCheckedChangedListener 是避免调用 setChecked() 时触发 onCheckedChanged()
+        holder.mCheckBox.setOnClickListener(new OnClickListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                onImageCheckedChanged(holder.mImage, isChecked, position);
+            public void onClick(View v) {
+                final boolean checked = holder.mCheckBox.isChecked();
+                onImageCheckedChanged(holder.mImage, checked, position);
             }
         });
     }
@@ -105,10 +121,10 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
 
     private void onImageCheckedChanged(ImageView imageView, boolean isChecked, int position) {
         if (isChecked) {
-            imageView.setAlpha(0.5f);
+            imageView.setAlpha(SELECTED_ALPHA);
             mSelectedImages.add(mImages.get(position));
         } else {
-            imageView.setAlpha(1.0f);
+            imageView.setAlpha(UNSELECTED_ALPHA);
             mSelectedImages.remove(mImages.get(position));
         }
     }
@@ -123,6 +139,14 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
 
             mImage = (ImageView) itemView.findViewById(R.id.image);
             mCheckBox = (CheckBox) itemView.findViewById(R.id.checkbox);
+
+            // 改变 drawable 的颜色
+            Drawable btnDrawable = ContextCompat.getDrawable
+                    (mContext, R.drawable.selector_drawable_checkbox);
+            ColorStateList colorStateList = ContextCompat.getColorStateList
+                    (mContext, R.color.selector_color_checkbox);
+            DrawableCompat.setTintList(btnDrawable, colorStateList);
+            mCheckBox.setButtonDrawable(btnDrawable);
         }
     }
 

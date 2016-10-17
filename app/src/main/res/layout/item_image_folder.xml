@@ -9,6 +9,7 @@
         android:id="@+id/image_first"
         android:layout_width="50dp"
         android:layout_height="50dp"
+        android:scaleType="centerCrop"
         tools:src="@mipmap/ic_launcher"/>
 
     <LinearLayout
