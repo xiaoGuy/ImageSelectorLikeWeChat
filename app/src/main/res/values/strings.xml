@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">ImageSelectorLikeWeChat</string>
+    <string name="sdcard_unavailable">SD 卡不可用</string>
+    <string name="confirm">确定</string>
+    <string name="cancel">取消</string>
+    <string name="deny">拒绝</string>
+    <string name="allow">允许</string>
+    <string name="setting">设置</string>
+    <string name="need_storage_permission">显示图片需要存储权限</string>
 </resources>

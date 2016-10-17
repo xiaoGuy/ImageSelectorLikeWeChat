@@ -1,4 +1,4 @@
-package com.xiaoguy.imageselector.imagelaoder;
+package com.xiaoguy.imageselector.bean;
 
 import java.util.List;
 
