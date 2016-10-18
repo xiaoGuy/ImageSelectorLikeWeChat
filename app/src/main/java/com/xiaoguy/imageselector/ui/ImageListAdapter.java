@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.RecyclerView.ViewHolder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -15,7 +16,6 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.xiaoguy.imageselector.R;
-import com.xiaoguy.imageselector.ui.ImageListAdapter.ImageItemHolder;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -25,10 +25,12 @@ import java.util.List;
  * Created by XiaoGuy on 2016/10/14.
  */
 
-public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
+public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final float SELECTED_ALPHA = 0.5F;
     private static final float UNSELECTED_ALPHA = 1.0F;
+    private static final int TYPE_ITEM_CAMERA = 0;
+    private static final int TYPE_ITEM_IMAGE  = 1;
 
     /**
      * 最多可以选中的图片数量
@@ -48,7 +50,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
     /**
      * 是否显示拍照按钮
      */
-    private boolean mCameraEnabled;
+    private boolean mCameraEnabled = true;
 
     private Context mContext;
     private Toast mToast;
@@ -64,41 +66,47 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
     }
 
     @Override
-    public ImageItemHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(mContext).inflate(R.layout.item_image_list, parent, false);
-        return new ImageItemHolder(view);
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        if (viewType == TYPE_ITEM_IMAGE) {
+            return new ItemImageHolder(LayoutInflater.from(mContext).inflate
+                    (R.layout.item_image_list, parent, false));
+        } else {
+            return new ItemCameraHolder(LayoutInflater.from(mContext).inflate
+                    (R.layout.item_camera, parent, false));
+        }
     }
 
     @Override
-    public void onBindViewHolder(final ImageItemHolder holder, final int position) {
-//        if (mCameraEnabled && position == 0) {
-//            holder.mImage.setImageResource(R.mipmap.ic_launcher);
-//            holder.mCheckBox.setVisibility(View.GONE);
-//            holder.mImage.setOnClickListener(new OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//
-//                }
-//            });
-//            return;
-//        }
+    public void onBindViewHolder(final ViewHolder holder, final int position) {
+        if (getItemViewType(position) == TYPE_ITEM_CAMERA) {
+            ((ItemCameraHolder) holder).mLayoutCamera.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
 
+                }
+            });
+            return;
+        }
+
+        final ItemImageHolder itemImageHolder = (ItemImageHolder) holder;
         final String imagePath = mImages.get(position);
 
         Glide.with(mContext).
                 load(new File(imagePath)).
                 placeholder(R.drawable.shape_placeholder).
                 error(R.mipmap.ic_launcher).
-                into(holder.mImage);
+                into(itemImageHolder.mImage);
 
         // 还原选中状态
         if (mSelectedImages.contains(imagePath)) {
-            holder.mCheckBox.setChecked(true);
+            itemImageHolder.mCheckBox.setChecked(true);
+            itemImageHolder.mImage.setAlpha(SELECTED_ALPHA);
         } else {
-            holder.mCheckBox.setChecked(false);
+            itemImageHolder.mCheckBox.setChecked(false);
+            itemImageHolder.mImage.setAlpha(UNSELECTED_ALPHA);
         }
 
-        holder.mImage.setOnClickListener(new OnClickListener() {
+        itemImageHolder.mImage.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
 
@@ -106,12 +114,12 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
         });
 
         // 不使用 OnCheckedChangedListener 是避免调用 setChecked() 时触发 onCheckedChanged()
-        holder.mCheckBox.setOnClickListener(new OnClickListener() {
+        itemImageHolder.mCheckBox.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 // 使用的是特殊的 CheckBox ，点击以后并不会选中或取消选中，要在 OnClickListener 中
                 // 调用 setChecked() 进行设置
-                final boolean checked = holder.mCheckBox.isChecked();
+                final boolean checked = itemImageHolder.mCheckBox.isChecked();
                 // 如果选择数量到达了最大值则不能选中
                 if (! checked && mSelectedImages.size() >= MAX_SELECTED) {
                     if (mToast == null) {
@@ -122,8 +130,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
                     mToast.show();
                     return;
                 }
-                holder.mCheckBox.doToggle();
-                onImageCheckedChanged(holder.mImage, ! checked, position);
+                itemImageHolder.mCheckBox.doToggle();
+                onImageCheckedChanged(itemImageHolder.mImage, ! checked, position);
             }
         });
     }
@@ -131,6 +139,14 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
     @Override
     public int getItemCount() {
         return mImages.size();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (mCameraEnabled && position == 0) {
+            return TYPE_ITEM_CAMERA;
+        }
+        return TYPE_ITEM_IMAGE;
     }
 
     private void onImageCheckedChanged(ImageView imageView, boolean isChecked, int position) {
@@ -143,12 +159,12 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
         }
     }
 
-    class ImageItemHolder extends RecyclerView.ViewHolder {
+    class ItemImageHolder extends RecyclerView.ViewHolder {
 
         public ImageView mImage;
         public SpecialCheckBox mCheckBox;
 
-        public ImageItemHolder(View itemView) {
+        public ItemImageHolder(View itemView) {
             super(itemView);
 
             mImage = (ImageView) itemView.findViewById(R.id.image);
@@ -164,10 +180,14 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
         }
     }
 
-    class ImageItemCamera extends RecyclerView.ViewHolder {
+    class ItemCameraHolder extends RecyclerView.ViewHolder {
 
-        public ImageItemCamera(View itemView) {
+        public ViewGroup mLayoutCamera;
+
+        public ItemCameraHolder(View itemView) {
             super(itemView);
+
+            mLayoutCamera = (ViewGroup) itemView;
         }
     }
 }

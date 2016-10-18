@@ -8,4 +8,5 @@
     <string name="setting">设置</string>
     <string name="need_storage_permission">显示图片需要存储权限</string>
     <string name="max_selected">最多可以选择 %1$d 张</string>
+    <string name="take_photo">拍摄照片</string>
 </resources>

@@ -5,4 +5,6 @@
     <color name="colorAccent">#FF4081</color>
 
     <color name="green">#46C01B</color>
+    <color name="itemCameraNormal">#353535</color>
+    <color name="itemCameraPressed">#0d0d0d</color>
 </resources>
