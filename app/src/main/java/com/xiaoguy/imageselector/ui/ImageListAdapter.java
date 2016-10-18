@@ -10,8 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.xiaoguy.imageselector.R;
@@ -51,6 +51,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
     private boolean mCameraEnabled;
 
     private Context mContext;
+    private Toast mToast;
 
     public ImageListAdapter(Context context, List<String> images) {
         mContext = context;
@@ -108,8 +109,21 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
         holder.mCheckBox.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                // 使用的是特殊的 CheckBox ，点击以后并不会选中或取消选中，要在 OnClickListener 中
+                // 调用 setChecked() 进行设置
                 final boolean checked = holder.mCheckBox.isChecked();
-                onImageCheckedChanged(holder.mImage, checked, position);
+                // 如果选择数量到达了最大值则不能选中
+                if (! checked && mSelectedImages.size() >= MAX_SELECTED) {
+                    if (mToast == null) {
+                        String hint = mContext.getResources().getString
+                                (R.string.max_selected, MAX_SELECTED);
+                        mToast = Toast.makeText(mContext, hint, Toast.LENGTH_SHORT);
+                    }
+                    mToast.show();
+                    return;
+                }
+                holder.mCheckBox.doToggle();
+                onImageCheckedChanged(holder.mImage, ! checked, position);
             }
         });
     }
@@ -132,13 +146,13 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageItemHolder> {
     class ImageItemHolder extends RecyclerView.ViewHolder {
 
         public ImageView mImage;
-        public CheckBox mCheckBox;
+        public SpecialCheckBox mCheckBox;
 
         public ImageItemHolder(View itemView) {
             super(itemView);
 
             mImage = (ImageView) itemView.findViewById(R.id.image);
-            mCheckBox = (CheckBox) itemView.findViewById(R.id.checkbox);
+            mCheckBox = (SpecialCheckBox) itemView.findViewById(R.id.checkbox);
 
             // 改变 drawable 的颜色
             Drawable btnDrawable = ContextCompat.getDrawable
