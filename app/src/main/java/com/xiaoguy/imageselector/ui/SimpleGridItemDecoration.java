@@ -5,7 +5,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
 /**
- * 该分割线没有进行绘制，只是让 item 之间产生间距，以父布局的背景充当绘制
+ * Created by dee on 2015/8/18.
  */
 public class SimpleGridItemDecoration extends RecyclerView.ItemDecoration {
 
@@ -37,7 +37,7 @@ public class SimpleGridItemDecoration extends RecyclerView.ItemDecoration {
 //                outRect.top = spacing;
 //            }
             if (position < spanCount) {
-                outRect.top = spacing - 3;
+                outRect.top = spacing;
             }
             outRect.bottom = spacing;
         }

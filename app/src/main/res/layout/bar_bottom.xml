@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/bottom_bar_height"
+    android:layout_alignParentBottom="true"
+    android:paddingLeft="15dp"
+    android:paddingRight="15dp"
+    android:background="@color/blackTranslucence">
+
+    <com.xiaoguy.imageselector.ui.SpecialButton
+        android:id="@+id/btn_imageFolder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/text_btnMore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="@color/selector_color_btn_more"
+            android:layout_gravity="bottom"/>
+
+        <ImageView
+            android:id="@+id/image_btnMore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="2dp"
+            android:layout_gravity="bottom"/>
+    </com.xiaoguy.imageselector.ui.SpecialButton>
+
+    <TextView
+        android:id="@+id/btn_preview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:clickable="true"
+        android:textSize="18sp"
+        android:textColor="@color/selector_color_btn_preview"
+        android:text="预览"/>
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:layout_toLeftOf="@id/btn_preview"
+        android:layout_margin="10dp"
+        android:background="@color/divider_vertical"/>
+
+</RelativeLayout>

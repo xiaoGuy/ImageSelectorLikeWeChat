@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/title_bar_height"
+    android:orientation="horizontal"
+    android:background="@color/colorPrimary">
+
+    <ImageView
+        android:id="@+id/btn_back"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:padding="10dp"
+        android:clickable="true"
+        android:src="@drawable/ic_left_arrow"
+        android:background="@drawable/selector_btn_usual"/>
+
+    <View
+        android:id="@+id/divider"
+        android:layout_toRightOf="@id/btn_back"
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:background="#2E2E32"/>
+
+    <TextView
+        android:layout_toRightOf="@id/divider"
+        android:id="@+id/text_title_folderName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:layout_centerVertical="true"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        android:text="图片和视频"/>
+
+    <Button
+        android:id="@+id/btn_send"
+        android:layout_alignParentRight="true"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layout_centerVertical="true"
+        android:enabled="false"
+        android:text="@string/send"
+        android:textColor="@color/selector_color_btn_send"
+        android:textSize="15sp"
+        android:background="@drawable/selector_btn_send"/>
+
+</RelativeLayout>

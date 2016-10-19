@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--<item android:drawable="@color/colorSendBtnPressed" android:state_pressed="true"/>
+    <item android:drawable="@color/colorUsualBtnPressed" android:state_enabled="false"/>
+    <item android:drawable="@color/colorSendBtnNormal"/>-->
+
+    <!-- pressed -->
+    <item android:state_pressed="true">
+        <shape>
+            <corners android:radius="2dp"/>
+            <stroke android:width="1dp" android:color="@color/colorSendBtnPressedStroke"/>
+            <solid android:color="@color/colorSendBtnPressed"/>
+        </shape>
+    </item>
+
+    <!-- Unable -->
+    <item android:state_enabled="false">
+        <shape>
+            <corners android:radius="2dp"/>
+            <solid android:color="@color/colorSendBtnUnable"/>
+        </shape>
+    </item>
+
+    <!-- normal -->
+    <item>
+        <shape>
+            <corners android:radius="2dp"/>
+            <stroke android:width="1dp" android:color="@color/colorSendBtnNormalStroke"/>
+            <solid android:color="@color/colorSendBtnNormal"/>
+        </shape>
+    </item>
+</selector>

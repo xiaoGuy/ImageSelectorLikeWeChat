@@ -1,10 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimary">#393A3F</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
 
     <color name="green">#46C01B</color>
     <color name="itemCameraNormal">#353535</color>
     <color name="itemCameraPressed">#0d0d0d</color>
+
+    <color name="colorStatuBar">#303135</color>
+    <color name="blackTranslucence">#E0393A3F</color>
+
+    <color name="divider_vertical">#2E2E32</color>
+    <color name="colorUsualBtnPressed">#2E2E32</color>
+
+    <!-- 发送按钮 -->
+    <color name="colorSendBtnUnable">#2D6830</color>
+    <color name="colorSendBtnUnableText">#6C956E</color>
+    <color name="colorSendBtnPressed">#179B16</color>
+    <color name="colorSendBtnPressedStroke">#158E14</color>
+    <color name="colorSendBtnPressedText">#A2D7A2</color>
+    <color name="colorSendBtnNormal">#1AAD19</color>
+    <color name="colorSendBtnNormalStroke">#179E16</color>
 </resources>

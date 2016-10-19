@@ -8,11 +8,15 @@
     <string name="setting">设置</string>
     <string name="need_storage_permission">显示图片需要存储权限</string>
     <string name="need_camera_permission">拍照需要相机权限</string>
-    <string name="max_selected">最多可以选择 %1$d 张</string>
+    <string name="max_selected">最多选择 %1$d 张</string>
     <string name="take_photo">拍摄照片</string>
 
     <string name="set_storage_permission">显示图片需要存储权限，是否设置</string>
     <string name="set_camera_permission">拍摄照片需要相机权限，是否设置</string>
 
     <string name="take_photo_error">啊咧，好像出现了一点问题</string>
+
+    <string name="no_image">还没有图片哦</string>
+    <string name="all_image">所有图片</string>
+    <string name="send">发送</string>
 </resources>

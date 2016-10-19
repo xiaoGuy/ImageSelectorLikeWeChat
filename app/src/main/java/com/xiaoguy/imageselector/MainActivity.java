@@ -4,13 +4,10 @@ import android.Manifest;
 import android.Manifest.permission;
 import android.app.AlertDialog.Builder;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.database.Cursor;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,29 +18,27 @@ import android.provider.MediaStore.Images.Media;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.RecyclerView.ViewHolder;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
+import com.xiaoguy.imageselector.adapter.ImageFolderListAdapter;
+import com.xiaoguy.imageselector.adapter.ImageFolderListAdapter.OnImageFolderClickListener;
+import com.xiaoguy.imageselector.adapter.ImageListAdapter;
+import com.xiaoguy.imageselector.adapter.ImageListAdapter.OnItemOperateListener;
 import com.xiaoguy.imageselector.bean.ImageFolder;
 import com.xiaoguy.imageselector.ui.DividerItemDecoration;
-import com.xiaoguy.imageselector.ui.ImageFolderAdapter;
 import com.xiaoguy.imageselector.ui.SimpleGridItemDecoration;
-import com.xiaoguy.imageselector.ui.SpecialCheckBox;
+import com.xiaoguy.imageselector.ui.SpecialButton;
 import com.xiaoguy.imageselector.ui.StrongBottomSheetDialog;
+import com.xiaoguy.imageselector.util.DrawableUtil;
 import com.xiaoguy.imageselector.util.ScreenUtil;
 
 import java.io.File;
@@ -64,7 +59,8 @@ import permissions.dispatcher.PermissionRequest;
 import permissions.dispatcher.RuntimePermissions;
 
 @RuntimePermissions
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements
+        OnItemOperateListener, OnImageFolderClickListener {
 
     private static final String TAG = MainActivity.class.getName();
 
@@ -77,9 +73,14 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String PHOTO_REFIX = "xg_";
     private static final String PHOTO_SUFFIX = ".jpeg";
+    @BindView(R.id.btn_imageFolder)
+    SpecialButton mBtnImageFolder;
+    @BindView(R.id.text_btnMore)
+    TextView mTextBtnMore;
+    @BindView(R.id.image_btnMore)
+    ImageView mImageBtnMore;
 
     private int mRequestCode;
-    private boolean mIsFinishWhenPermissionDeny;
 
     private ProgressDialog mProgressDialog;
     private StrongBottomSheetDialog mBottomSheetDialog;
@@ -121,10 +122,12 @@ public class MainActivity extends AppCompatActivity {
      */
     private boolean mIsPhotoDirectoryCreated;
 
-    @BindView(R.id.toolbar)
-    Toolbar mToolbar;
+    //    @BindView(R.id.toolbar)
+//    Toolbar mToolbar;
     @BindView(R.id.recyclerView_imageList)
     RecyclerView mRecyclerViewImageList;
+
+    ImageListAdapter mImageListAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,7 +135,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        initView();
         MainActivityPermissionsDispatcher.isSDCardAvailableWithCheck(this);
+    }
+
+    private void initView() {
+        mImageListAdapter = new ImageListAdapter(this, mAllImages);
+        mImageListAdapter.setOnItemOperateListener(this);
+        mRecyclerViewImageList.setAdapter(mImageListAdapter);
+        mRecyclerViewImageList.setLayoutManager(new GridLayoutManager(this, 3));
+        mRecyclerViewImageList.setHasFixedSize(true);
+        mRecyclerViewImageList.addItemDecoration(new SimpleGridItemDecoration(3, 8, false));
+
+        mImageBtnMore.setImageDrawable(DrawableUtil.setTintList
+                (this, R.drawable.selector_btn_more, R.color.selector_color_btn_more));
+        // 字体的 baseline 距离底部有一段距离，这段距离叫做 descent
+        mImageBtnMore.setPadding(0, 0, 0, (int)(mTextBtnMore.getPaint().descent() / 2));
+        mTextBtnMore.setText(R.string.all_image);
     }
 
     @NeedsPermission(permission.READ_EXTERNAL_STORAGE)
@@ -233,13 +252,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void onLoadFinish() {
         mProgressDialog.dismiss();
-
-        ImageListAdapter adapter = new ImageListAdapter(this, mAllImages);
-        mRecyclerViewImageList.setAdapter(adapter);
-        mRecyclerViewImageList.setLayoutManager(new GridLayoutManager(this, 3));
-        mRecyclerViewImageList.setHasFixedSize(true);
-        mRecyclerViewImageList.addItemDecoration(new SimpleGridItemDecoration(3, 8, false));
-
+        mImageListAdapter.notifyDataSetChanged();
     }
 
     @NeedsPermission(permission.CAMERA)
@@ -284,7 +297,7 @@ public class MainActivity extends AppCompatActivity {
         CharSequence appName = getPackageManager().getApplicationLabel(getApplicationInfo());
         mPhotoDirecory = new File(path + File.separator + appName);
 
-        if (! mPhotoDirecory.exists()) {
+        if (!mPhotoDirecory.exists()) {
             if (mPhotoDirecory.mkdir()) {
                 mIsPhotoDirectoryCreated = true;
             }
@@ -302,10 +315,13 @@ public class MainActivity extends AppCompatActivity {
 
             RecyclerView recyclerView = (RecyclerView)
                     View.inflate(this, R.layout.bottom_dialog_layout, null);
-            ImageFolderAdapter adapter = new ImageFolderAdapter(this, mImageFolders);
+            ImageFolderListAdapter adapter = new ImageFolderListAdapter(mImageFolders);
+            adapter.setOnImageFolderClickListener(this);
             recyclerView.setAdapter(adapter);
-            recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-            recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL_LIST));
+            recyclerView.setLayoutManager
+                    (new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+            recyclerView.addItemDecoration
+                    (new DividerItemDecoration(this, DividerItemDecoration.VERTICAL_LIST));
 
             final int height = ScreenUtil.getScreenHeight(this) / 2;
             mBottomSheetDialog.setMaxHeight(height);
@@ -333,8 +349,6 @@ public class MainActivity extends AppCompatActivity {
         MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
     }
 
-    //**************************** Permission About Start ************************************
-
     @OnPermissionDenied(permission.READ_EXTERNAL_STORAGE)
     void onStoragePermissionDenied() {
         MainActivityPermissionsDispatcher.isSDCardAvailableWithCheck(this);
@@ -347,35 +361,35 @@ public class MainActivity extends AppCompatActivity {
 
     @OnShowRationale(permission.READ_EXTERNAL_STORAGE)
     void showRationaleForStoragePermission(PermissionRequest request) {
-        showRationaleDialog(permission.READ_EXTERNAL_STORAGE, request);
+        showRationaleDialog(permission.READ_EXTERNAL_STORAGE, request, true);
     }
 
     @OnShowRationale(permission.CAMERA)
     void showRationaleForCameraPermission(PermissionRequest request) {
-        showRationaleDialog(permission.CAMERA, request);
+        showRationaleDialog(permission.CAMERA, request, false);
     }
 
     @OnNeverAskAgain(permission.READ_EXTERNAL_STORAGE)
     void onStoragePermissionNeverAsk() {
-        onNeverAsk(permission.READ_EXTERNAL_STORAGE);
+        onNeverAsk(permission.READ_EXTERNAL_STORAGE, true);
     }
 
     @OnNeverAskAgain(permission.CAMERA)
     void onCameraPermissionNeverAsk() {
-        onNeverAsk(permission.CAMERA);
+        onNeverAsk(permission.CAMERA, false);
     }
 
-    private void onNeverAsk(String permission) {
+    private void onNeverAsk(String permission, final boolean isFinishOnCancel) {
 
         String message = null;
         if (permission.equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
             message = getString(R.string.set_storage_permission);
             mRequestCode = REQUEST_STORAGE_SETTING;
-            mIsFinishWhenPermissionDeny = true;
+//            mIsFinishWhenPermissionDeny = true;
         } else if (permission.equals(Manifest.permission.CAMERA)) {
             message = getString(R.string.set_camera_permission);
             mRequestCode = REQUEST_CAMERA_SETTING;
-            mIsFinishWhenPermissionDeny = false;
+//            mIsFinishWhenPermissionDeny = false;
         }
 
         new Builder(this).
@@ -393,22 +407,23 @@ public class MainActivity extends AppCompatActivity {
                 setNegativeButton(R.string.cancel, new OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        if (mIsFinishWhenPermissionDeny) {
+//                        if (mIsFinishWhenPermissionDeny) {
+                        if (isFinishOnCancel) {
                             finish();
                         }
                     }
                 }).show();
     }
 
-    private void showRationaleDialog(String permission, final PermissionRequest request) {
-
+    private void showRationaleDialog(String permission, final PermissionRequest request,
+                                     final boolean isFinishOnCancel) {
         String message = null;
         if (permission.equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
             message = getString(R.string.need_storage_permission);
-            mIsFinishWhenPermissionDeny = true;
+//            mIsFinishWhenPermissionDeny = true;
         } else if (permission.equals(Manifest.permission.CAMERA)) {
             message = getString(R.string.need_camera_permission);
-            mIsFinishWhenPermissionDeny = false;
+//            mIsFinishWhenPermissionDeny = false;
         }
 
         new AlertDialog.Builder(this)
@@ -421,7 +436,8 @@ public class MainActivity extends AppCompatActivity {
                 .setNegativeButton(R.string.deny, new OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        if (mIsFinishWhenPermissionDeny) {
+//                        if (mIsFinishWhenPermissionDeny) {
+                        if (isFinishOnCancel) {
                             finish();
                         }
                     }
@@ -452,183 +468,23 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-    //**************************** Permission About End ************************************
 
-    /**
-     * 图片列表适配器
-     */
-    class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    @Override
+    public void onTakePhoto() {
+        MainActivityPermissionsDispatcher.takePhotoWithCheck(this);
+    }
 
-        private static final float SELECTED_ALPHA = 0.5F;
-        private static final float UNSELECTED_ALPHA = 1.0F;
-        private static final int TYPE_ITEM_CAMERA = 0;
-        private static final int TYPE_ITEM_IMAGE  = 1;
+    @Override
+    public void onImageClick(String path) {
+    }
 
-        /**
-         * 最多可以选中的图片数量
-         */
-        private static final int MAX_SELECTED = 9;
+    @Override
+    public void onSelectedOverflow(int max) {
+        showToast(getString(R.string.max_selected, max));
+    }
 
-        /**
-         * 当前图片目录中的图片
-         */
-        private List<String> mImages;
+    @Override
+    public void onImageFolderClick(List<String> images, String folderName) {
 
-        /**
-         * 选中的图片
-         */
-        private List<String> mSelectedImages;
-
-        /**
-         * 是否显示拍照按钮
-         */
-        private boolean mCameraEnabled = true;
-
-        public ImageListAdapter(Context context, List<String> images) {
-            mImages = images;
-            mSelectedImages = new ArrayList<>(MAX_SELECTED);
-        }
-
-        public void setCameraEnabled(boolean enabled) {
-            mCameraEnabled = enabled;
-        }
-
-        public void setImages(List<String> images) {
-            mImages = images;
-            notifyDataSetChanged();
-        }
-
-        @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            if (viewType == TYPE_ITEM_IMAGE) {
-                return new ItemImageHolder(LayoutInflater.from(MainActivity.this).inflate
-                        (R.layout.item_image_list, parent, false));
-            } else {
-                return new ItemCameraHolder(LayoutInflater.from(MainActivity.this).inflate
-                        (R.layout.item_camera, parent, false));
-            }
-        }
-
-        @Override
-        public void onBindViewHolder(final ViewHolder holder, final int position) {
-            if (getItemViewType(position) == TYPE_ITEM_CAMERA) {
-                ((ItemCameraHolder) holder).mLayoutCamera.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        MainActivityPermissionsDispatcher.takePhotoWithCheck(MainActivity.this);
-                    }
-                });
-                return;
-            }
-
-            final ItemImageHolder itemImageHolder = (ItemImageHolder) holder;
-            final String imagePath = mImages.get(position);
-
-            Glide.with(MainActivity.this).
-                    load(new File(imagePath)).
-                    placeholder(R.drawable.shape_placeholder).
-                    error(R.drawable.shape_placeholder).
-                    into(itemImageHolder.mImage);
-
-            // 还原选中状态
-            if (mSelectedImages.contains(imagePath)) {
-                itemImageHolder.mCheckBox.setChecked(true);
-                itemImageHolder.mImage.setAlpha(SELECTED_ALPHA);
-            } else {
-                itemImageHolder.mCheckBox.setChecked(false);
-                itemImageHolder.mImage.setAlpha(UNSELECTED_ALPHA);
-            }
-
-            itemImageHolder.mImage.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                }
-            });
-
-            // 不使用 OnCheckedChangedListener 是避免调用 setChecked() 时触发 onCheckedChanged()
-            itemImageHolder.mCheckBox.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    // 使用的是特殊的 CheckBox ，点击以后并不会选中或取消选中，要在 OnClickListener 中
-                    // 调用 setChecked() 进行设置
-                    final boolean checked = itemImageHolder.mCheckBox.isChecked();
-                    // 如果选择数量到达了最大值则不能选中
-                    if (! checked && mSelectedImages.size() >= MAX_SELECTED) {
-//                        if (mToast == null) {
-//                            String hint = MainActivity.this.getResources().getString
-//                                    (R.string.max_selected, MAX_SELECTED);
-//                            mToast = Toast.makeText(MainActivity.this, hint, Toast.LENGTH_SHORT);
-//                        }
-//                        mToast.show();
-                        showToast(getString(R.string.max_selected, MAX_SELECTED));
-                        return;
-                    }
-                    itemImageHolder.mCheckBox.doToggle();
-                    onImageCheckedChanged(itemImageHolder.mImage, ! checked, position);
-                }
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return mImages.size();
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if (mCameraEnabled && position == 0) {
-                return TYPE_ITEM_CAMERA;
-            }
-            return TYPE_ITEM_IMAGE;
-        }
-
-        private void onImageCheckedChanged(ImageView imageView, boolean isChecked, int position) {
-            if (isChecked) {
-                imageView.setAlpha(SELECTED_ALPHA);
-                mSelectedImages.add(mImages.get(position));
-            } else {
-                imageView.setAlpha(UNSELECTED_ALPHA);
-                mSelectedImages.remove(mImages.get(position));
-            }
-        }
-
-        /**
-         * 图片列表中的项
-         */
-        class ItemImageHolder extends RecyclerView.ViewHolder {
-
-            public ImageView mImage;
-            public SpecialCheckBox mCheckBox;
-
-            public ItemImageHolder(View itemView) {
-                super(itemView);
-
-                mImage = (ImageView) itemView.findViewById(R.id.image);
-                mCheckBox = (SpecialCheckBox) itemView.findViewById(R.id.checkbox);
-
-                // 改变 drawable 的颜色
-                Drawable btnDrawable = ContextCompat.getDrawable
-                        (MainActivity.this, R.drawable.selector_drawable_checkbox);
-                ColorStateList colorStateList = ContextCompat.getColorStateList
-                        (MainActivity.this, R.color.selector_color_checkbox);
-                DrawableCompat.setTintList(btnDrawable, colorStateList);
-                mCheckBox.setButtonDrawable(btnDrawable);
-            }
-        }
-
-        /**
-         * 图片列表中的拍照按钮
-         */
-        class ItemCameraHolder extends RecyclerView.ViewHolder {
-
-            public ViewGroup mLayoutCamera;
-
-            public ItemCameraHolder(View itemView) {
-                super(itemView);
-
-                mLayoutCamera = (ViewGroup) itemView;
-            }
-        }
     }
 }
