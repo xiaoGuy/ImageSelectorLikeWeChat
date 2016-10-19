@@ -16,9 +16,11 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.provider.MediaStore.Images.Media;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.StringRes;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AlertDialog;
@@ -28,6 +30,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.ViewHolder;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,6 +48,7 @@ import com.xiaoguy.imageselector.util.ScreenUtil;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -62,17 +66,24 @@ import permissions.dispatcher.RuntimePermissions;
 @RuntimePermissions
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = MainActivity.class.getName();
+
     private static final String SELECTION = Media.MIME_TYPE + " = ? or " + Media.MIME_TYPE + " = ?";
     private static final String[] SELECTION_ARGS = {"image/jpeg", "image/png"};
 
     private static final int REQUEST_STORAGE_SETTING = 1;
     private static final int REQUEST_CAMERA_SETTING = 2;
+    private static final int REQUEST_TAKE_PHOTO = 3;
+
+    private static final String PHOTO_REFIX = "xg_";
+    private static final String PHOTO_SUFFIX = ".jpeg";
 
     private int mRequestCode;
     private boolean mIsFinishWhenPermissionDeny;
 
     private ProgressDialog mProgressDialog;
     private StrongBottomSheetDialog mBottomSheetDialog;
+    private Toast mToast;
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -95,6 +106,20 @@ public class MainActivity extends AppCompatActivity {
      */
     private List<String> mAllImages = new ArrayList<>();
 
+    /**
+     * 拍摄的照片
+     */
+    private File mPhotoFile;
+
+    /**
+     * 保存拍摄的照片的目录
+     */
+    private File mPhotoDirecory;
+
+    /**
+     * 标记 SD 卡中是否存在 mPhotoDirecory
+     */
+    private boolean mIsPhotoDirectoryCreated;
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -219,7 +244,53 @@ public class MainActivity extends AppCompatActivity {
 
     @NeedsPermission(permission.CAMERA)
     void takePhoto() {
+        // 创建保存拍摄的照片的目录失败
+        if (createPhotoDirectory() == null) {
+            Log.w(TAG, "create photo directory failed!");
+            showToast(R.string.take_photo_error);
+            return;
+        }
 
+        mPhotoFile = new File(createPhotoDirectory(),
+                PHOTO_REFIX + System.currentTimeMillis() + PHOTO_SUFFIX);
+        if (mPhotoFile.exists()) {
+            mPhotoFile.delete();
+        }
+
+        try {
+            mPhotoFile.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.w(TAG, "create photo file failed! " + mPhotoFile.getAbsolutePath());
+        }
+
+        Uri uri = Uri.fromFile(mPhotoFile);
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+        startActivityForResult(intent, REQUEST_TAKE_PHOTO);
+    }
+
+    /**
+     * 创建保存拍摄的照片的目录
+     *
+     * @return 保存拍摄的照片的目录或者 null （创建目录失败）
+     */
+    private File createPhotoDirectory() {
+        if (mIsPhotoDirectoryCreated) {
+            return mPhotoDirecory;
+        }
+
+        String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+        CharSequence appName = getPackageManager().getApplicationLabel(getApplicationInfo());
+        mPhotoDirecory = new File(path + File.separator + appName);
+
+        if (! mPhotoDirecory.exists()) {
+            if (mPhotoDirecory.mkdir()) {
+                mIsPhotoDirectoryCreated = true;
+            }
+        }
+
+        return mPhotoDirecory;
     }
 
     /**
@@ -242,6 +313,18 @@ public class MainActivity extends AppCompatActivity {
             mBottomSheetDialog.setContentView(recyclerView);
         }
         mBottomSheetDialog.show();
+    }
+
+    private void showToast(@StringRes int stringResId) {
+        showToast(getString(stringResId));
+    }
+
+    private void showToast(String text) {
+        if (mToast == null) {
+            mToast = Toast.makeText(this, text, Toast.LENGTH_SHORT);
+        }
+        mToast.setText(text);
+        mToast.show();
     }
 
     @Override
@@ -338,7 +421,6 @@ public class MainActivity extends AppCompatActivity {
                 .setNegativeButton(R.string.deny, new OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-//                        request.cancel();
                         if (mIsFinishWhenPermissionDeny) {
                             finish();
                         }
@@ -356,6 +438,18 @@ public class MainActivity extends AppCompatActivity {
             MainActivityPermissionsDispatcher.isSDCardAvailableWithCheck(this);
         } else if (requestCode == REQUEST_CAMERA_SETTING) {
             MainActivityPermissionsDispatcher.takePhotoWithCheck(this);
+        } else if (requestCode == REQUEST_TAKE_PHOTO) {
+            if (resultCode == RESULT_CANCELED) {
+                // 取消拍照后要删除创建出的文件
+                if (mPhotoFile.delete()) {
+                    Log.d(TAG, mPhotoFile.getAbsolutePath() + "deleted!");
+                }
+                mPhotoFile = null;
+            } else {
+                // 将拍摄的照片保存到数据库中，这样才能从 MediaStore 中读取到
+                sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,
+                        Uri.fromFile(mPhotoFile)));
+            }
         }
     }
     //**************************** Permission About End ************************************
@@ -389,7 +483,6 @@ public class MainActivity extends AppCompatActivity {
          * 是否显示拍照按钮
          */
         private boolean mCameraEnabled = true;
-        private Toast mToast;
 
         public ImageListAdapter(Context context, List<String> images) {
             mImages = images;
@@ -462,12 +555,13 @@ public class MainActivity extends AppCompatActivity {
                     final boolean checked = itemImageHolder.mCheckBox.isChecked();
                     // 如果选择数量到达了最大值则不能选中
                     if (! checked && mSelectedImages.size() >= MAX_SELECTED) {
-                        if (mToast == null) {
-                            String hint = MainActivity.this.getResources().getString
-                                    (R.string.max_selected, MAX_SELECTED);
-                            mToast = Toast.makeText(MainActivity.this, hint, Toast.LENGTH_SHORT);
-                        }
-                        mToast.show();
+//                        if (mToast == null) {
+//                            String hint = MainActivity.this.getResources().getString
+//                                    (R.string.max_selected, MAX_SELECTED);
+//                            mToast = Toast.makeText(MainActivity.this, hint, Toast.LENGTH_SHORT);
+//                        }
+//                        mToast.show();
+                        showToast(getString(R.string.max_selected, MAX_SELECTED));
                         return;
                     }
                     itemImageHolder.mCheckBox.doToggle();

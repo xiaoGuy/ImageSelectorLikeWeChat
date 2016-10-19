@@ -13,4 +13,6 @@
 
     <string name="set_storage_permission">显示图片需要存储权限，是否设置</string>
     <string name="set_camera_permission">拍摄照片需要相机权限，是否设置</string>
+
+    <string name="take_photo_error">啊咧，好像出现了一点问题</string>
 </resources>
