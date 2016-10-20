@@ -55,12 +55,37 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
      */
     private boolean mCameraEnabled = true;
 
-    private OnItemOperateListener mOnItemOperateListener;
+    private OnImageOperateListener mOnImageOperateListener;
 
-    public interface OnItemOperateListener {
+    public interface OnImageOperateListener {
+
+        /**
+         * 开始选中了图片
+         */
+        int SELECTED = 0;
+
+        /**
+         * 取消选中所有图片
+         */
+        int CLEARED = 1;
+
+        /**
+         * 当点击了拍照按钮时调用
+         */
         void onTakePhoto();
         void onImageClick(String path);
-        void onSelectedOverflow(int max);
+
+        /**
+         * 当选择的图片超过最大数量时调用
+         * @param max 可以选择的最大数量
+         */
+        void onImageSelectedOverflow(int max);
+
+        /**
+         * 当第一次选中了图片或者取消选中所有图片时调用（可以在该回调中设置发送按钮是否可以点击）
+         * @param selectedState {@link #SELECTED} 或者 {@link #CLEARED}
+         */
+        void onSelectedStateChanged(int selectedState);
     }
 
     public ImageListAdapter(Context context, List<String> images) {
@@ -68,8 +93,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         mSelectedImages = new ArrayList<>(MAX_SELECTED);
     }
 
-    public void setOnItemOperateListener(OnItemOperateListener onItemOperateListener) {
-        mOnItemOperateListener = onItemOperateListener;
+    public void setOnImageOperateListener(OnImageOperateListener onImageOperateListener) {
+        mOnImageOperateListener = onImageOperateListener;
     }
 
     public void setCameraEnabled(boolean enabled) {
@@ -102,8 +127,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             ((ItemCameraHolder) holder).mLayoutCamera.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (mOnItemOperateListener != null) {
-                        mOnItemOperateListener.onTakePhoto();
+                    if (mOnImageOperateListener != null) {
+                        mOnImageOperateListener.onTakePhoto();
                     }
                 }
             });
@@ -132,8 +157,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         itemImageHolder.mImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mOnItemOperateListener != null) {
-                    mOnItemOperateListener.onImageClick(mImages.get(position));
+                if (mOnImageOperateListener != null) {
+                    mOnImageOperateListener.onImageClick(mImages.get(position));
                 }
             }
         });
@@ -147,8 +172,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 final boolean checked = itemImageHolder.mCheckBox.isChecked();
                 // 如果选择数量到达了最大值则不能选中
                 if (! checked && mSelectedImages.size() >= MAX_SELECTED) {
-                    if (mOnItemOperateListener != null) {
-                        mOnItemOperateListener.onSelectedOverflow(MAX_SELECTED);
+                    if (mOnImageOperateListener != null) {
+                        mOnImageOperateListener.onImageSelectedOverflow(MAX_SELECTED);
                     }
                     return;
                 }
@@ -175,14 +200,23 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         if (isChecked) {
             imageView.setAlpha(SELECTED_ALPHA);
             mSelectedImages.add(mImages.get(position));
+            // 第一张照片被选中
+            if (mSelectedImages.size() == 1 && mOnImageOperateListener != null) {
+                mOnImageOperateListener.onSelectedStateChanged(OnImageOperateListener.SELECTED);
+            }
         } else {
             imageView.setAlpha(UNSELECTED_ALPHA);
             mSelectedImages.remove(mImages.get(position));
+            // 取消选择了所有照片
+            if (mSelectedImages.size() == 0 && mOnImageOperateListener != null) {
+                mOnImageOperateListener.onSelectedStateChanged(OnImageOperateListener.CLEARED);
+            }
         }
     }
 
     /**
      * 图片列表中的项
+     * item_image_list.xml
      */
     class ItemImageHolder extends RecyclerView.ViewHolder {
 
@@ -203,6 +237,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     /**
      * 图片列表中的拍照按钮
+     * item_camera.xml
      */
     class ItemCameraHolder extends RecyclerView.ViewHolder {
 

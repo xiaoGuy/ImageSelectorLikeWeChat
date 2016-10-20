@@ -25,6 +25,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,7 +33,7 @@ import android.widget.Toast;
 import com.xiaoguy.imageselector.adapter.ImageFolderListAdapter;
 import com.xiaoguy.imageselector.adapter.ImageFolderListAdapter.OnImageFolderClickListener;
 import com.xiaoguy.imageselector.adapter.ImageListAdapter;
-import com.xiaoguy.imageselector.adapter.ImageListAdapter.OnItemOperateListener;
+import com.xiaoguy.imageselector.adapter.ImageListAdapter.OnImageOperateListener;
 import com.xiaoguy.imageselector.bean.ImageFolder;
 import com.xiaoguy.imageselector.ui.DividerItemDecoration;
 import com.xiaoguy.imageselector.ui.SimpleGridItemDecoration;
@@ -60,7 +61,7 @@ import permissions.dispatcher.RuntimePermissions;
 
 @RuntimePermissions
 public class MainActivity extends AppCompatActivity implements
-        OnItemOperateListener, OnImageFolderClickListener {
+        OnImageOperateListener, OnImageFolderClickListener {
 
     private static final String TAG = MainActivity.class.getName();
 
@@ -77,8 +78,12 @@ public class MainActivity extends AppCompatActivity implements
     SpecialButton mBtnImageFolder;
     @BindView(R.id.text_btnMore)
     TextView mTextBtnMore;
+    @BindView(R.id.btn_send)
+    Button mBtnSend;
     @BindView(R.id.image_btnMore)
     ImageView mImageBtnMore;
+    @BindView(R.id.btn_preview)
+    TextView mBtnPreview;
 
     private int mRequestCode;
 
@@ -141,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private void initView() {
         mImageListAdapter = new ImageListAdapter(this, mAllImages);
-        mImageListAdapter.setOnItemOperateListener(this);
+        mImageListAdapter.setOnImageOperateListener(this);
         mRecyclerViewImageList.setAdapter(mImageListAdapter);
         mRecyclerViewImageList.setLayoutManager(new GridLayoutManager(this, 3));
         mRecyclerViewImageList.setHasFixedSize(true);
@@ -150,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements
         mImageBtnMore.setImageDrawable(DrawableUtil.setTintList
                 (this, R.drawable.selector_btn_more, R.color.selector_color_btn_more));
         // 字体的 baseline 距离底部有一段距离，这段距离叫做 descent
-        mImageBtnMore.setPadding(0, 0, 0, (int)(mTextBtnMore.getPaint().descent() / 2));
+        mImageBtnMore.setPadding(0, 0, 0, (int) (mTextBtnMore.getPaint().descent() / 2));
         mTextBtnMore.setText(R.string.all_image);
     }
 
@@ -469,6 +474,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    //***************************** OnImageOperateListener ********************************
     @Override
     public void onTakePhoto() {
         MainActivityPermissionsDispatcher.takePhotoWithCheck(this);
@@ -479,8 +485,17 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onSelectedOverflow(int max) {
+    public void onImageSelectedOverflow(int max) {
         showToast(getString(R.string.max_selected, max));
+    }
+
+    @Override
+    public void onSelectedStateChanged(int selectedState) {
+        if (selectedState == OnImageOperateListener.SELECTED) {
+            mBtnSend.setEnabled(true);
+        } else if (selectedState == OnImageOperateListener.CLEARED) {
+            mBtnSend.setEnabled(false);
+        }
     }
 
     @Override
