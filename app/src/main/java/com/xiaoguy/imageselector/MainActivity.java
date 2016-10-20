@@ -68,10 +68,6 @@ public class MainActivity extends PermissionActivity implements
     private static final String PHOTO_REFIX = "xg_";
     private static final String PHOTO_SUFFIX = ".jpeg";
 
-    private int mRequestCode;
-
-//    @BindView(R.id.btn_otherFolder)
-//    SpecialButton mBtnOtherFolder;
     @BindView(R.id.text_btnOtherFolder)
     TextView mTextBtnOtherFolder;
     @BindView(R.id.btn_send)
@@ -94,7 +90,6 @@ public class MainActivity extends PermissionActivity implements
     RecyclerView mRecyclerViewImageFolderList;
 
     private ProgressDialog mProgressDialog;
-//    private StrongBottomSheetDialog mBottomSheetDialog;
 
     /**
      * 充当 PupupWindow
@@ -161,8 +156,6 @@ public class MainActivity extends PermissionActivity implements
 
         mImageBtnOtherFolder.setImageDrawable(DrawableUtil.setTintList
                 (this, R.drawable.selector_btn_more, R.color.selector_color_btn_more));
-        // 字体的 baseline 距离底部有一段距离，这段距离叫做 descent
-        mImageBtnOtherFolder.setPadding(0, 0, 0, (int) (mTextBtnOtherFolder.getPaint().descent() / 2));
         mTextBtnOtherFolder.setText(R.string.all_image);
         mViewTouchOutside.setAlpha(0);
 
@@ -172,6 +165,7 @@ public class MainActivity extends PermissionActivity implements
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
                 if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
                     mLayoutImageFolder.setVisibility(View.GONE);
+//                    mRecyclerViewImageFolderList.scrollToPosition(0);
                 }
             }
 
@@ -374,10 +368,7 @@ public class MainActivity extends PermissionActivity implements
         if (mImageFolders.size() == 0) {
             return;
         }
-
-        if (mBottomSheetBehavior == null) {
-        }
-
+        // TODO 展开时滚到选中处
         final int state = mBottomSheetBehavior.getState();
         // 完全展开
         if (state == BottomSheetBehavior.STATE_EXPANDED) {

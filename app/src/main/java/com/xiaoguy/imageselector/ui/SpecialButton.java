@@ -4,13 +4,13 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 /**
  * 拦截点击事件，按下时将所有的子 View 设为 pressed 状态；松开时恢复状态
  */
 
-public class SpecialButton extends LinearLayout {
+public class SpecialButton extends RelativeLayout {
 
     public SpecialButton(Context context) {
         super(context);

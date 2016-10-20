@@ -12,10 +12,8 @@
     <com.xiaoguy.imageselector.ui.SpecialButton
         android:id="@+id/btn_otherFolder"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:clickable="true"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:clickable="true">
 
         <TextView
             android:id="@+id/text_btnOtherFolder"
@@ -23,14 +21,15 @@
             android:layout_height="wrap_content"
             android:textSize="18sp"
             android:textColor="@color/selector_color_btn_more"
-            android:layout_gravity="bottom"/>
+            android:layout_centerVertical="true"/>
 
         <ImageView
             android:id="@+id/image_btnOtherFolder"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="2dp"
-            android:layout_gravity="bottom"/>
+            android:layout_toRightOf="@id/text_btnOtherFolder"
+            android:layout_alignBottom="@id/text_btnOtherFolder"
+            android:layout_marginLeft="2dp"/>
     </com.xiaoguy.imageselector.ui.SpecialButton>
 
     <TextView
