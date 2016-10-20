@@ -15,7 +15,11 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images.Media;
+import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.BottomSheetBehavior.BottomSheetCallback;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -23,6 +27,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,10 +39,7 @@ import com.xiaoguy.imageselector.adapter.ImageListAdapter.OnImageOperateListener
 import com.xiaoguy.imageselector.bean.ImageFolder;
 import com.xiaoguy.imageselector.ui.DividerItemDecoration;
 import com.xiaoguy.imageselector.ui.SimpleGridItemDecoration;
-import com.xiaoguy.imageselector.ui.SpecialButton;
-import com.xiaoguy.imageselector.ui.StrongBottomSheetDialog;
 import com.xiaoguy.imageselector.util.DrawableUtil;
-import com.xiaoguy.imageselector.util.ScreenUtil;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -51,7 +53,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-//@RuntimePermissions
 public class MainActivity extends PermissionActivity implements
         OnImageOperateListener, OnImageFolderClickListener {
 
@@ -66,23 +67,39 @@ public class MainActivity extends PermissionActivity implements
 
     private static final String PHOTO_REFIX = "xg_";
     private static final String PHOTO_SUFFIX = ".jpeg";
-    @BindView(R.id.btn_imageFolder)
-    SpecialButton mBtnImageFolder;
-    @BindView(R.id.text_btnMore)
-    TextView mTextBtnMore;
+
+    private int mRequestCode;
+
+//    @BindView(R.id.btn_otherFolder)
+//    SpecialButton mBtnOtherFolder;
+    @BindView(R.id.text_btnOtherFolder)
+    TextView mTextBtnOtherFolder;
     @BindView(R.id.btn_send)
     Button mBtnSend;
-    @BindView(R.id.image_btnMore)
-    ImageView mImageBtnMore;
+    @BindView(R.id.image_btnOtherFolder)
+    ImageView mImageBtnOtherFolder;
     @BindView(R.id.btn_preview)
     TextView mBtnPreview;
     @BindView(R.id.btn_takePhoto)
     ImageView mBtnImage;
-
-    private int mRequestCode;
+    @BindView(R.id.view_touchOutside)
+    View mViewTouchOutside;
+    @BindView(R.id.bottom_sheet)
+    RelativeLayout mBottomSheet;
+    @BindView(R.id.layout_imageFolder)
+    CoordinatorLayout mLayoutImageFolder;
+    @BindView(R.id.recyclerView_imageList)
+    RecyclerView mRecyclerViewImageList;
+    @BindView(R.id.recyclerView_imageFolderList)
+    RecyclerView mRecyclerViewImageFolderList;
 
     private ProgressDialog mProgressDialog;
-    private StrongBottomSheetDialog mBottomSheetDialog;
+//    private StrongBottomSheetDialog mBottomSheetDialog;
+
+    /**
+     * 充当 PupupWindow
+     */
+    private BottomSheetBehavior mBottomSheetBehavior;
     private Toast mToast;
     private Handler mHandler = new Handler() {
         @Override
@@ -121,10 +138,8 @@ public class MainActivity extends PermissionActivity implements
      */
     private boolean mIsPhotoDirectoryCreated;
 
-    @BindView(R.id.recyclerView_imageList)
-    RecyclerView mRecyclerViewImageList;
-
-    ImageListAdapter mImageListAdapter;
+    private ImageListAdapter mImageListAdapter;
+    private ImageFolderListAdapter mImageFolderListAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,11 +159,34 @@ public class MainActivity extends PermissionActivity implements
         mRecyclerViewImageList.setHasFixedSize(true);
         mRecyclerViewImageList.addItemDecoration(new SimpleGridItemDecoration(3, 8, false));
 
-        mImageBtnMore.setImageDrawable(DrawableUtil.setTintList
+        mImageBtnOtherFolder.setImageDrawable(DrawableUtil.setTintList
                 (this, R.drawable.selector_btn_more, R.color.selector_color_btn_more));
         // 字体的 baseline 距离底部有一段距离，这段距离叫做 descent
-        mImageBtnMore.setPadding(0, 0, 0, (int) (mTextBtnMore.getPaint().descent() / 2));
-        mTextBtnMore.setText(R.string.all_image);
+        mImageBtnOtherFolder.setPadding(0, 0, 0, (int) (mTextBtnOtherFolder.getPaint().descent() / 2));
+        mTextBtnOtherFolder.setText(R.string.all_image);
+        mViewTouchOutside.setAlpha(0);
+
+        mBottomSheetBehavior = BottomSheetBehavior.from(mBottomSheet);
+        mBottomSheetBehavior.setBottomSheetCallback(new BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+                    mLayoutImageFolder.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+                mViewTouchOutside.setAlpha(slideOffset);
+            }
+        });
+        mImageFolderListAdapter = new ImageFolderListAdapter(mImageFolders);
+        mImageFolderListAdapter.setOnImageFolderClickListener(this);
+        mRecyclerViewImageFolderList.setAdapter(mImageFolderListAdapter);
+        mRecyclerViewImageFolderList.setLayoutManager
+                    (new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        mRecyclerViewImageFolderList.addItemDecoration
+                    (new DividerItemDecoration(this, DividerItemDecoration.VERTICAL_LIST));
     }
 
     @Override
@@ -331,26 +369,38 @@ public class MainActivity extends PermissionActivity implements
     /**
      * 显示所有的图片目录
      */
-    private void showImageFolders() {
-        if (mBottomSheetDialog == null) {
-            mBottomSheetDialog = new StrongBottomSheetDialog(this);
-
-            RecyclerView recyclerView = (RecyclerView)
-                    View.inflate(this, R.layout.bottom_dialog_layout, null);
-            ImageFolderListAdapter adapter = new ImageFolderListAdapter(mImageFolders);
-            adapter.setOnImageFolderClickListener(this);
-            recyclerView.setAdapter(adapter);
-            recyclerView.setLayoutManager
-                    (new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-            recyclerView.addItemDecoration
-                    (new DividerItemDecoration(this, DividerItemDecoration.VERTICAL_LIST));
-
-            final int height = ScreenUtil.getScreenHeight(this) / 2;
-            mBottomSheetDialog.setMaxHeight(height);
-            mBottomSheetDialog.setPeekHeight(height);
-            mBottomSheetDialog.setContentView(recyclerView);
+    @OnClick(R.id.btn_otherFolder)
+    void showImageFolders() {
+        if (mImageFolders.size() == 0) {
+            return;
         }
-        mBottomSheetDialog.show();
+
+        if (mBottomSheetBehavior == null) {
+        }
+
+        final int state = mBottomSheetBehavior.getState();
+        // 完全展开
+        if (state == BottomSheetBehavior.STATE_EXPANDED) {
+            mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        // 处于 peekHeight 处（这里 peekHeight 为 0）
+        } else if (state == BottomSheetBehavior.STATE_COLLAPSED) {
+            mLayoutImageFolder.setVisibility(View.VISIBLE);
+            // 延迟展开，否则看不到展开动画
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                }
+            }, 10);
+        }
+    }
+
+    /**
+     * 点击 PopupWindow 外面关闭 PopupWindow
+     */
+    @OnClick(R.id.view_touchOutside)
+    void onTouchOutside() {
+        mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
     }
 
     private void showToast(@StringRes int stringResId) {

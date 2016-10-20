@@ -14,6 +14,8 @@
     <color name="divider_vertical">#2E2E32</color>
     <color name="colorUsualBtnPressed">#2E2E32</color>
 
+    <color name="colorPopupWindowDim">#D0000000</color>
+
     <!-- 发送按钮 -->
     <color name="colorSendBtnUnable">#2D6830</color>
     <color name="colorSendBtnUnableText">#6C956E</color>
