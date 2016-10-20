@@ -15,11 +15,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images.Media;
-import android.provider.Settings;
-import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -30,6 +26,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.xiaoguy.imageselector.activity.PermissionActivity;
 import com.xiaoguy.imageselector.adapter.ImageFolderListAdapter;
 import com.xiaoguy.imageselector.adapter.ImageFolderListAdapter.OnImageFolderClickListener;
 import com.xiaoguy.imageselector.adapter.ImageListAdapter;
@@ -52,15 +49,10 @@ import java.util.Set;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import permissions.dispatcher.NeedsPermission;
-import permissions.dispatcher.OnNeverAskAgain;
-import permissions.dispatcher.OnPermissionDenied;
-import permissions.dispatcher.OnShowRationale;
-import permissions.dispatcher.PermissionRequest;
-import permissions.dispatcher.RuntimePermissions;
+import butterknife.OnClick;
 
-@RuntimePermissions
-public class MainActivity extends AppCompatActivity implements
+//@RuntimePermissions
+public class MainActivity extends PermissionActivity implements
         OnImageOperateListener, OnImageFolderClickListener {
 
     private static final String TAG = MainActivity.class.getName();
@@ -84,6 +76,8 @@ public class MainActivity extends AppCompatActivity implements
     ImageView mImageBtnMore;
     @BindView(R.id.btn_preview)
     TextView mBtnPreview;
+    @BindView(R.id.btn_takePhoto)
+    ImageView mBtnImage;
 
     private int mRequestCode;
 
@@ -127,8 +121,6 @@ public class MainActivity extends AppCompatActivity implements
      */
     private boolean mIsPhotoDirectoryCreated;
 
-    //    @BindView(R.id.toolbar)
-//    Toolbar mToolbar;
     @BindView(R.id.recyclerView_imageList)
     RecyclerView mRecyclerViewImageList;
 
@@ -141,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements
         ButterKnife.bind(this);
 
         initView();
-        MainActivityPermissionsDispatcher.isSDCardAvailableWithCheck(this);
+        requestPermission(PERMISSION_STORAGE, true);
     }
 
     private void initView() {
@@ -159,8 +151,29 @@ public class MainActivity extends AppCompatActivity implements
         mTextBtnMore.setText(R.string.all_image);
     }
 
-    @NeedsPermission(permission.READ_EXTERNAL_STORAGE)
-    void isSDCardAvailable() {
+    @Override
+    protected void onPermissionGranted(String permission) {
+        if (permission.equals(PERMISSION_STORAGE)) {
+            start();
+        } else if (permission.equals(Manifest.permission.CAMERA)) {
+            doTakePhoto();
+        }
+    }
+
+    @Override
+    protected void onPermissionDenied(String permission) {
+        boolean isRequired;
+        if (permission.equals(PERMISSION_STORAGE)) {
+            isRequired = true;
+        } else if (permission.equals(Manifest.permission.CAMERA)) {
+            isRequired = false;
+        } else {
+            isRequired = false;
+        }
+        requestPermission(permission, isRequired);
+    }
+
+    void start() {
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             loadImages();
         } else {
@@ -260,8 +273,12 @@ public class MainActivity extends AppCompatActivity implements
         mImageListAdapter.notifyDataSetChanged();
     }
 
-    @NeedsPermission(permission.CAMERA)
+    @OnClick(R.id.btn_takePhoto)
     void takePhoto() {
+        requestPermission(permission.CAMERA, false);
+    }
+
+    void doTakePhoto() {
         // 创建保存拍摄的照片的目录失败
         if (createPhotoDirectory() == null) {
             Log.w(TAG, "create photo directory failed!");
@@ -348,117 +365,15 @@ public class MainActivity extends AppCompatActivity implements
         mToast.show();
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
-    }
-
-    @OnPermissionDenied(permission.READ_EXTERNAL_STORAGE)
-    void onStoragePermissionDenied() {
-        MainActivityPermissionsDispatcher.isSDCardAvailableWithCheck(this);
-    }
-
-    @OnPermissionDenied(permission.CAMERA)
-    void onCameraPermissionDenied() {
-        MainActivityPermissionsDispatcher.takePhotoWithCheck(this);
-    }
-
-    @OnShowRationale(permission.READ_EXTERNAL_STORAGE)
-    void showRationaleForStoragePermission(PermissionRequest request) {
-        showRationaleDialog(permission.READ_EXTERNAL_STORAGE, request, true);
-    }
-
-    @OnShowRationale(permission.CAMERA)
-    void showRationaleForCameraPermission(PermissionRequest request) {
-        showRationaleDialog(permission.CAMERA, request, false);
-    }
-
-    @OnNeverAskAgain(permission.READ_EXTERNAL_STORAGE)
-    void onStoragePermissionNeverAsk() {
-        onNeverAsk(permission.READ_EXTERNAL_STORAGE, true);
-    }
-
-    @OnNeverAskAgain(permission.CAMERA)
-    void onCameraPermissionNeverAsk() {
-        onNeverAsk(permission.CAMERA, false);
-    }
-
-    private void onNeverAsk(String permission, final boolean isFinishOnCancel) {
-
-        String message = null;
-        if (permission.equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
-            message = getString(R.string.set_storage_permission);
-            mRequestCode = REQUEST_STORAGE_SETTING;
-//            mIsFinishWhenPermissionDeny = true;
-        } else if (permission.equals(Manifest.permission.CAMERA)) {
-            message = getString(R.string.set_camera_permission);
-            mRequestCode = REQUEST_CAMERA_SETTING;
-//            mIsFinishWhenPermissionDeny = false;
-        }
-
-        new Builder(this).
-                setMessage(message).
-                setPositiveButton(R.string.setting, new OnClickListener() {
-                    // 跳转到设置界面
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                        Uri uri = Uri.fromParts("package", getPackageName(), null);
-                        intent.setData(uri);
-                        startActivityForResult(intent, mRequestCode);
-                    }
-                }).
-                setNegativeButton(R.string.cancel, new OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-//                        if (mIsFinishWhenPermissionDeny) {
-                        if (isFinishOnCancel) {
-                            finish();
-                        }
-                    }
-                }).show();
-    }
-
-    private void showRationaleDialog(String permission, final PermissionRequest request,
-                                     final boolean isFinishOnCancel) {
-        String message = null;
-        if (permission.equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
-            message = getString(R.string.need_storage_permission);
-//            mIsFinishWhenPermissionDeny = true;
-        } else if (permission.equals(Manifest.permission.CAMERA)) {
-            message = getString(R.string.need_camera_permission);
-//            mIsFinishWhenPermissionDeny = false;
-        }
-
-        new AlertDialog.Builder(this)
-                .setPositiveButton(R.string.allow, new OnClickListener() {
-                    @Override
-                    public void onClick(@NonNull DialogInterface dialog, int which) {
-                        request.proceed();
-                    }
-                })
-                .setNegativeButton(R.string.deny, new OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-//                        if (mIsFinishWhenPermissionDeny) {
-                        if (isFinishOnCancel) {
-                            finish();
-                        }
-                    }
-                })
-                .setCancelable(false)
-                .setMessage(message)
-                .show();
-    }
-
     // 从设置界面返回
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_STORAGE_SETTING) {
-            MainActivityPermissionsDispatcher.isSDCardAvailableWithCheck(this);
+            requestPermission(PERMISSION_STORAGE, true);
+
         } else if (requestCode == REQUEST_CAMERA_SETTING) {
-            MainActivityPermissionsDispatcher.takePhotoWithCheck(this);
+            requestPermission(permission.CAMERA, false);
+
         } else if (requestCode == REQUEST_TAKE_PHOTO) {
             if (resultCode == RESULT_CANCELED) {
                 // 取消拍照后要删除创建出的文件
@@ -477,7 +392,7 @@ public class MainActivity extends AppCompatActivity implements
     //***************************** OnImageOperateListener ********************************
     @Override
     public void onTakePhoto() {
-        MainActivityPermissionsDispatcher.takePhotoWithCheck(this);
+        takePhoto();
     }
 
     @Override
@@ -498,6 +413,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    //*************************** OnImageFolderClickListener *******************************
     @Override
     public void onImageFolderClick(List<String> images, String folderName) {
 
