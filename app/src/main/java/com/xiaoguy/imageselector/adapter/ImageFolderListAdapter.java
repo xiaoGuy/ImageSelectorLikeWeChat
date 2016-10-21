@@ -35,17 +35,18 @@ public class ImageFolderListAdapter extends RecyclerView.Adapter<ImageFolderHold
     /**
      * 记录当前的目录
      */
-    private int mCurrentFolder;
+    private int mCurrentFolderPosition;
 
     private OnImageFolderClickListener mOnImageFolderClickListener;
 
     public interface OnImageFolderClickListener {
         /**
          * 当图片目录被点击时调用
-         * @param images 被点击的目录下的图片
-         * @param folderName 被点击的目录的名字
+         * @param imageFolder 被点击的目录
+         * @param position 被点击的目录的位置
+         * @param isChecked 该目录是否已经处于选中状态
          */
-        void onImageFolderClick(List<String> images, String folderName);
+        void onImageFolderClick(ImageFolder imageFolder, int position, boolean isChecked);
     }
 
     public void setOnImageFolderClickListener(OnImageFolderClickListener onImageFolderClickListener) {
@@ -68,32 +69,38 @@ public class ImageFolderListAdapter extends RecyclerView.Adapter<ImageFolderHold
     }
 
     @Override
-    public void onBindViewHolder(ImageFolderHolder holder, final int position) {
+    public void onBindViewHolder(final ImageFolderHolder holder, final int position) {
         final ImageFolder imageFolder = mImageFolders.get(position);
 
         Glide.with(mContext).
-              load(new File(imageFolder.getFirstImagePath())).
+              load(new File(imageFolder.getFirstImage())).
               placeholder(R.drawable.shape_placeholder).
               error(R.drawable.shape_placeholder).
               centerCrop().
               into(holder.mImageView);
 
         holder.mTextFolderName.setText(imageFolder.getName());
-        holder.mTextImageCount.setText(getItemCount() + PIECE);
+        holder.mTextImageCount.setText(imageFolder.getImageCount() + PIECE);
 
         holder.mItem.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (mOnImageFolderClickListener != null) {
                     mOnImageFolderClickListener.
-                            onImageFolderClick(imageFolder.getImagePaths(), imageFolder.getName());
+                            onImageFolderClick(imageFolder, position, mCurrentFolderPosition == position);
                 }
-                mCurrentFolder = position;
+
+                if (mCurrentFolderPosition != position) {
+                    mCurrentFolderPosition = position;
+                    holder.mImageSelected.setVisibility(View.VISIBLE);
+                    // 清除上一次选择的目录的选中状态
+                    notifyDataSetChanged();
+                }
             }
         });
 
         // 还原选中的状态
-        if (mCurrentFolder == position) {
+        if (mCurrentFolderPosition == position) {
             holder.mImageSelected.setVisibility(View.VISIBLE);
         } else {
             holder.mImageSelected.setVisibility(View.GONE);

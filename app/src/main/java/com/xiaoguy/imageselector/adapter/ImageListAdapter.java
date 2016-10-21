@@ -7,7 +7,6 @@ package com.xiaoguy.imageselector.adapter;
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.ViewHolder;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -109,7 +108,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        Log.d("size", "onCreateViewHolder");
         if (mContext == null) {
             mContext = parent.getContext();
         }
@@ -125,7 +123,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, final int position) {
-        Log.d("size", "onBindViewHolder");
         if (getItemViewType(position) == TYPE_ITEM_CAMERA) {
             ((ItemCameraHolder) holder).mLayoutCamera.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -188,7 +185,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     @Override
     public int getItemCount() {
-        Log.d("size", "getItemCount " + mImages.size());
         return mImages.size();
     }
 

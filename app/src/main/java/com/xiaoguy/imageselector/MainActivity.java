@@ -57,16 +57,17 @@ public class MainActivity extends PermissionActivity implements
         OnImageOperateListener, OnImageFolderClickListener {
 
     private static final String TAG = MainActivity.class.getName();
+    private static final String PHOTO_REFIX = "xg_";
+    private static final String PHOTO_SUFFIX = ".jpeg";
 
     private static final String SELECTION = Media.MIME_TYPE + " = ? or " + Media.MIME_TYPE + " = ?";
     private static final String[] SELECTION_ARGS = {"image/jpeg", "image/png"};
 
+    private static final int MESSAGE_SCAN_FINISH = 4;
+
     private static final int REQUEST_STORAGE_SETTING = 1;
     private static final int REQUEST_CAMERA_SETTING = 2;
     private static final int REQUEST_TAKE_PHOTO = 3;
-
-    private static final String PHOTO_REFIX = "xg_";
-    private static final String PHOTO_SUFFIX = ".jpeg";
 
     @BindView(R.id.text_btnOtherFolder)
     TextView mTextBtnOtherFolder;
@@ -77,7 +78,9 @@ public class MainActivity extends PermissionActivity implements
     @BindView(R.id.btn_preview)
     TextView mBtnPreview;
     @BindView(R.id.btn_takePhoto)
-    ImageView mBtnImage;
+    ImageView mBtnTakePhoto;
+    @BindView(R.id.text_title_folderName)
+    TextView mTextTitleFolderName;
     @BindView(R.id.view_touchOutside)
     View mViewTouchOutside;
     @BindView(R.id.bottom_sheet)
@@ -99,14 +102,11 @@ public class MainActivity extends PermissionActivity implements
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            onLoadFinish();
+            if (msg.what == MESSAGE_SCAN_FINISH) {
+                onLoadFinish();
+            }
         }
     };
-
-    /**
-     * 当前要显示的图片集合
-     */
-    private List<String> mCurrentImages;
 
     /**
      * 手机中所有的图片目录
@@ -119,6 +119,11 @@ public class MainActivity extends PermissionActivity implements
     private List<String> mAllImages = new ArrayList<>();
 
     /**
+     * 当前要显示的图片集合
+     */
+    private List<String> mCurrentImages = new ArrayList<>();
+
+    /**
      * 拍摄的照片
      */
     private File mPhotoFile;
@@ -126,12 +131,17 @@ public class MainActivity extends PermissionActivity implements
     /**
      * 保存拍摄的照片的目录
      */
-    private File mPhotoDirecory;
+    private File mPhotoDirectory;
 
     /**
-     * 标记 SD 卡中是否存在 mPhotoDirecory
+     * 标记 SD 卡中是否存在 mPhotoDirectory
      */
     private boolean mIsPhotoDirectoryCreated;
+
+    /**
+     * 选中的图片目录在列表中的位置
+     */
+    private int mSelectedFolderPosition;
 
     private ImageListAdapter mImageListAdapter;
     private ImageFolderListAdapter mImageFolderListAdapter;
@@ -147,7 +157,9 @@ public class MainActivity extends PermissionActivity implements
     }
 
     private void initView() {
-        mImageListAdapter = new ImageListAdapter(this, mAllImages);
+        mTextTitleFolderName.setText(R.string.all_image);
+
+        mImageListAdapter = new ImageListAdapter(this, mCurrentImages);
         mImageListAdapter.setOnImageOperateListener(this);
         mRecyclerViewImageList.setAdapter(mImageListAdapter);
         mRecyclerViewImageList.setLayoutManager(new GridLayoutManager(this, 3));
@@ -237,8 +249,7 @@ public class MainActivity extends PermissionActivity implements
         Set<String> imageFolderPathSet = new HashSet<>();
 
         Cursor cursor = getContentResolver().query(
-                Media.EXTERNAL_CONTENT_URI, new String[]{
-                        Media.DATA, Media.DATE_MODIFIED}, SELECTION,
+                Media.EXTERNAL_CONTENT_URI, new String[]{ Media.DATA, Media.DATE_MODIFIED}, SELECTION,
                 SELECTION_ARGS, Media.DATE_MODIFIED + " DESC");
 
         while (cursor.moveToNext()) {
@@ -258,7 +269,7 @@ public class MainActivity extends PermissionActivity implements
                 imageFolder = new ImageFolder();
                 imageFolder.setName(parentFile.getName());
                 imageFolder.setPath(parentFile.getAbsolutePath());
-                imageFolder.setFirstImagePath(currentImagePath);
+                imageFolder.setFirstImage(currentImagePath);
             }
             final File[] children = parentFile.listFiles(new FileFilter() {
                 @Override
@@ -272,12 +283,12 @@ public class MainActivity extends PermissionActivity implements
                 }
             });
             List<String> imagePathList = null;
-            // 无法获取到该目录下的图片，但是该目录下至少存在一张图片
+            // 无法获取到该目录下的图片，所以该目录下只有一张图片（通过该图片获取到的目录）
             if (children == null) {
                 imagePathList = new ArrayList<>(1);
                 imagePathList.add(currentImagePath);
                 imageFolder.setImageCount(1);
-                imageFolder.setImagePaths(imagePathList);
+                imageFolder.setImages(imagePathList);
                 mImageFolders.add(imageFolder);
                 mAllImages.add(currentImagePath);
                 continue;
@@ -288,13 +299,24 @@ public class MainActivity extends PermissionActivity implements
                 imagePathList.add(child.getAbsolutePath());
             }
             imageFolder.setImageCount(imageCount);
-            imageFolder.setImagePaths(imagePathList);
+            imageFolder.setImages(imagePathList);
             mImageFolders.add(imageFolder);
             mAllImages.addAll(imagePathList);
         }
 
+        // SD 卡中没有图片
+        if (mAllImages.size() != 0) {
+            // 往图片目录中添加“所有图片”目录并放在第一位
+            ImageFolder allImageFolder = new ImageFolder();
+            allImageFolder.setFirstImage(mAllImages.get(0));
+            allImageFolder.setImages(mAllImages);
+            allImageFolder.setImageCount(mAllImages.size());
+            allImageFolder.setName(getString(R.string.all_image));
+            mImageFolders.add(0, allImageFolder);
+        }
+
         cursor.close();
-        mHandler.sendEmptyMessage(0);
+        mHandler.sendEmptyMessage(MESSAGE_SCAN_FINISH);
     }
 
     /**
@@ -302,6 +324,7 @@ public class MainActivity extends PermissionActivity implements
      */
     private void onLoadFinish() {
         mProgressDialog.dismiss();
+        mCurrentImages.addAll(mAllImages);
         mImageListAdapter.notifyDataSetChanged();
     }
 
@@ -344,20 +367,20 @@ public class MainActivity extends PermissionActivity implements
      */
     private File createPhotoDirectory() {
         if (mIsPhotoDirectoryCreated) {
-            return mPhotoDirecory;
+            return mPhotoDirectory;
         }
 
         String path = Environment.getExternalStorageDirectory().getAbsolutePath();
         CharSequence appName = getPackageManager().getApplicationLabel(getApplicationInfo());
-        mPhotoDirecory = new File(path + File.separator + appName);
+        mPhotoDirectory = new File(path + File.separator + appName);
 
-        if (!mPhotoDirecory.exists()) {
-            if (mPhotoDirecory.mkdir()) {
+        if (!mPhotoDirectory.exists()) {
+            if (mPhotoDirectory.mkdir()) {
                 mIsPhotoDirectoryCreated = true;
             }
         }
 
-        return mPhotoDirecory;
+        return mPhotoDirectory;
     }
 
     /**
@@ -368,7 +391,9 @@ public class MainActivity extends PermissionActivity implements
         if (mImageFolders.size() == 0) {
             return;
         }
-        // TODO 展开时滚到选中处
+
+        mRecyclerViewImageFolderList.scrollToPosition(mSelectedFolderPosition);
+
         final int state = mBottomSheetBehavior.getState();
         // 完全展开
         if (state == BottomSheetBehavior.STATE_EXPANDED) {
@@ -456,7 +481,21 @@ public class MainActivity extends PermissionActivity implements
 
     //*************************** OnImageFolderClickListener *******************************
     @Override
-    public void onImageFolderClick(List<String> images, String folderName) {
+    public void onImageFolderClick(ImageFolder imageFolder, int position, boolean isChecked) {
+        mSelectedFolderPosition = position;
+        mTextBtnOtherFolder.setText(imageFolder.getName());
+        mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
+        if (! isChecked) {
+            mCurrentImages.clear();
+            mCurrentImages.addAll(imageFolder.getImages());
+            // 如果选择的是“所有图片”目录，要显示拍照按钮
+            if (imageFolder.getName().equals(getString(R.string.all_image))) {
+                mImageListAdapter.setCameraEnabled(true);
+            } else {
+                mImageListAdapter.setCameraEnabled(false);
+            }
+            mImageListAdapter.notifyDataSetChanged();
+        }
     }
 }

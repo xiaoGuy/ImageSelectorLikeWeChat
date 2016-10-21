@@ -10,9 +10,9 @@ public class ImageFolder {
 
     private int imageCount;
     private String path;
-    private String firstImagePath;
+    private String firstImage;
     private String name;
-    private List<String> imagePathList;
+    private List<String> images;
 
     public int getImageCount() {
         return imageCount;
@@ -30,20 +30,20 @@ public class ImageFolder {
         this.name = name;
     }
 
-    public List<String> getImagePaths() {
-        return imagePathList;
+    public List<String> getImages() {
+        return images;
     }
 
-    public void setImagePaths(List<String> imagePathList) {
-        this.imagePathList = imagePathList;
+    public void setImages(List<String> images) {
+        this.images = images;
     }
 
-    public String getFirstImagePath() {
-        return firstImagePath;
+    public String getFirstImage() {
+        return firstImage;
     }
 
-    public void setFirstImagePath(String firstImagePath) {
-        this.firstImagePath = firstImagePath;
+    public void setFirstImage(String firstImage) {
+        this.firstImage = firstImage;
     }
 
     public String getPath() {
@@ -52,5 +52,14 @@ public class ImageFolder {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    @Override
+    public String toString() {
+        return "ImageFolder{" +
+                "imageCount=" + imageCount +
+                ", path='" + path + '\'' +
+                ", name='" + name + '\'' +
+                '}';
     }
 }

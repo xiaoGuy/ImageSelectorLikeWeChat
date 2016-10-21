@@ -7,6 +7,7 @@
     android:orientation="horizontal"
     android:background="@color/colorPrimary">
 
+    <!-- 返回按钮 -->
     <ImageView
         android:id="@+id/btn_back"
         android:layout_width="wrap_content"
@@ -16,6 +17,7 @@
         android:src="@drawable/ic_left_arrow"
         android:background="@drawable/selector_btn_usual"/>
 
+    <!-- 分割线 -->
     <View
         android:id="@+id/divider"
         android:layout_toRightOf="@id/btn_back"
@@ -36,11 +38,12 @@
         android:textSize="20sp"
         android:text="图片和视频"/>
 
+    <!-- 发送按钮 -->
     <Button
         android:id="@+id/btn_send"
         android:layout_alignParentRight="true"
         android:layout_width="60dp"
-        android:layout_height="wrap_content"
+        android:layout_height="30dp"
         android:layout_margin="8dp"
         android:layout_centerVertical="true"
         android:enabled="false"
