@@ -1,6 +1,6 @@
 package com.xiaoguy.imageselector.bean;
 
-import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Created by XiaoGuy on 2016/10/9.
@@ -12,7 +12,7 @@ public class ImageFolder {
     private String path;
     private String firstImage;
     private String name;
-    private List<String> images;
+    private ArrayList<String> images;
 
     public int getImageCount() {
         return imageCount;
@@ -30,11 +30,11 @@ public class ImageFolder {
         this.name = name;
     }
 
-    public List<String> getImages() {
+    public ArrayList<String> getImages() {
         return images;
     }
 
-    public void setImages(List<String> images) {
+    public void setImages(ArrayList<String> images) {
         this.images = images;
     }
 

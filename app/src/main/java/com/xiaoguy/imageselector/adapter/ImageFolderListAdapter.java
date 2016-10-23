@@ -64,7 +64,7 @@ public class ImageFolderListAdapter extends RecyclerView.Adapter<ImageFolderHold
         }
 
         View view = LayoutInflater.from(parent.getContext()).inflate
-                (R.layout.item_image_folder, parent, false);
+                (R.layout.adapter_item_image_folder, parent, false);
         return new ImageFolderHolder(view);
     }
 

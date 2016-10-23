@@ -9,22 +9,22 @@
     <!-- ActionBar -->
     <include
         android:id="@+id/bar_title"
-        layout="@layout/bar_title"/>
+        layout="@layout/include_title_bar"/>
 
     <FrameLayout
         android:layout_below="@id/bar_title"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/colorBackgroundMain">
 
         <!-- EmptyView -->
         <LinearLayout
-            android:id="@+id/layout_empty"
+            android:id="@+id/layout_emptyView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
             android:orientation="vertical"
-            android:background="@drawable/shape_placeholder"
-            android:visibility="visible">
+            android:background="@drawable/shape_placeholder">
 
             <ImageView
                 android:id="@+id/btn_takePhoto"
@@ -49,14 +49,13 @@
         <android.support.v7.widget.RecyclerView
             android:id="@+id/recyclerView_imageList"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@android:color/black"/>
+            android:layout_height="wrap_content"/>
 
     </FrameLayout>
 
     <!-- 底部栏 -->
     <include android:id="@+id/bar_bottom"
-             layout="@layout/bar_bottom"/>
+             layout="@layout/include_bottom_bar"/>
 
     <!-- PopupWindow -->
     <android.support.design.widget.CoordinatorLayout

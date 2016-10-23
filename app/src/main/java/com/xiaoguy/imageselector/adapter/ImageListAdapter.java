@@ -43,12 +43,12 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     /**
      * 当前图片目录中的图片
      */
-    private List<String> mImages;
+    private ArrayList<String> mImages;
 
     /**
      * 选中的图片
      */
-    private List<String> mSelectedImages;
+    private ArrayList<String> mSelectedImages;
 
     /**
      * 是否显示拍照按钮
@@ -73,7 +73,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
          * 当点击了拍照按钮时调用
          */
         void onTakePhoto();
-        void onImageClick(String path);
+        void onImageClick(int position, ArrayList<String> images, ArrayList<String> selectedImages);
 
         /**
          * 当选择的图片超过最大数量时调用
@@ -82,13 +82,12 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         void onImageSelectedOverflow(int max);
 
         /**
-         * 当第一次选中了图片或者取消选中所有图片时调用（可以在该回调中设置发送按钮是否可以点击）
-         * @param selectedState {@link #SELECTED} 或者 {@link #CLEARED}
+         * 当图片被选中或者取消选中时调用
          */
-        void onSelectedStateChanged(int selectedState);
+        void onImageSelected(List<String> selectedImages);
     }
 
-    public ImageListAdapter(Context context, List<String> images) {
+    public ImageListAdapter(Context context,ArrayList<String> images) {
         mImages = images;
         mSelectedImages = new ArrayList<>(MAX_SELECTED);
     }
@@ -101,7 +100,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         mCameraEnabled = enabled;
     }
 
-    public void setImages(List<String> images) {
+    public void setImages(ArrayList<String> images) {
         mImages = images;
         notifyDataSetChanged();
     }
@@ -114,10 +113,10 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
         if (viewType == TYPE_ITEM_IMAGE) {
             return new ItemImageHolder(LayoutInflater.from(mContext).inflate
-                    (R.layout.item_image_list, parent, false));
+                    (R.layout.adapter_item_image_list, parent, false));
         } else {
             return new ItemCameraHolder(LayoutInflater.from(mContext).inflate
-                    (R.layout.item_camera, parent, false));
+                    (R.layout.adapter_item_camera, parent, false));
         }
     }
 
@@ -158,7 +157,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             @Override
             public void onClick(View v) {
                 if (mOnImageOperateListener != null) {
-                    mOnImageOperateListener.onImageClick(mImages.get(position));
+                    mOnImageOperateListener.onImageClick(position, mImages, mSelectedImages);
                 }
             }
         });
@@ -167,8 +166,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         itemImageHolder.mCheckBox.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // 使用的是特殊的 CheckBox ，点击以后并不会选中或取消选中，要在 OnClickListener 中
-                // 调用 setChecked() 进行设置
+                // 使用的是 SpecialCheckBox ，点击以后并不会选中或取消选中，只能通过 setChecked()
                 final boolean checked = itemImageHolder.mCheckBox.isChecked();
                 // 如果选择数量到达了最大值则不能选中
                 if (! checked && mSelectedImages.size() >= MAX_SELECTED) {
@@ -196,21 +194,25 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         return TYPE_ITEM_IMAGE;
     }
 
+    public void setMaxSelected() {
+
+    }
+
+    public int getMaxSelected() {
+        return MAX_SELECTED;
+    }
+
     private void onImageCheckedChanged(ImageView imageView, boolean isChecked, int position) {
         if (isChecked) {
             imageView.setAlpha(SELECTED_ALPHA);
             mSelectedImages.add(mImages.get(position));
-            // 第一张照片被选中
-            if (mSelectedImages.size() == 1 && mOnImageOperateListener != null) {
-                mOnImageOperateListener.onSelectedStateChanged(OnImageOperateListener.SELECTED);
-            }
         } else {
             imageView.setAlpha(UNSELECTED_ALPHA);
             mSelectedImages.remove(mImages.get(position));
-            // 取消选择了所有照片
-            if (mSelectedImages.size() == 0 && mOnImageOperateListener != null) {
-                mOnImageOperateListener.onSelectedStateChanged(OnImageOperateListener.CLEARED);
-            }
+        }
+
+        if (mOnImageOperateListener != null) {
+            mOnImageOperateListener.onImageSelected(mSelectedImages);
         }
     }
 

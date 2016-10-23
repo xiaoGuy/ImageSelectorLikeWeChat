@@ -6,7 +6,7 @@
     android:layout_alignParentBottom="true"
     android:paddingLeft="15dp"
     android:paddingRight="15dp"
-    android:background="@color/blackTranslucence">
+    android:background="@color/colorTranslucenceBlack">
 
     <!-- 点击弹出 PopupWindow 的按钮 -->
     <com.xiaoguy.imageselector.ui.SpecialButton
@@ -39,9 +39,10 @@
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
         android:clickable="true"
+        android:enabled="false"
         android:textSize="18sp"
         android:textColor="@color/selector_color_btn_preview"
-        android:text="预览"/>
+        android:text="@string/preview"/>
 
     <View
         android:layout_width="1dp"

@@ -17,6 +17,9 @@
     <string name="take_photo_error">啊咧，好像出现了一点问题</string>
 
     <string name="no_image">还没有图片哦</string>
-    <string name="all_image">所有图片</string>
+    <string name="all_image">图片</string>
     <string name="send">发送</string>
+    <string name="preview">预览</string>
+    <string name="select">选择</string>
+    <string name="title_image_viewer">%1$d/%2$d</string>
 </resources>
