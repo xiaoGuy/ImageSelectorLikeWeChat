@@ -134,8 +134,14 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             return;
         }
 
+        String imagePath;
+        // 拍照按钮占据了第一张图片的位置
+        if (mCameraEnabled) {
+            imagePath = mImages.get(position - 1);
+        } else {
+            imagePath = mImages.get(position);
+        }
         final ItemImageHolder itemImageHolder = (ItemImageHolder) holder;
-        final String imagePath = mImages.get(position);
 
         Glide.with(mContext).
                 load(new File(imagePath)).
@@ -157,7 +163,11 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             @Override
             public void onClick(View v) {
                 if (mOnImageOperateListener != null) {
-                    mOnImageOperateListener.onImageClick(position, mImages, mSelectedImages);
+                    if (mCameraEnabled) {
+                        mOnImageOperateListener.onImageClick(position - 1, mImages, mSelectedImages);
+                    } else {
+                        mOnImageOperateListener.onImageClick(position, mImages, mSelectedImages);
+                    }
                 }
             }
         });

@@ -8,7 +8,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatCheckBox;
 import android.view.ViewGroup;
@@ -26,12 +25,15 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
+import butterknife.OnPageChange;
+import butterknife.OnPageChange.Callback;
 
 /**
  * Created by XiaoGuy on 2016/10/21.
  */
 
-public class ImageViewerActivity extends AppCompatActivity implements OnPageChangeListener {
+public class ImageViewerActivity extends AppCompatActivity {
 
     private static final String POSITION = "position";
     private static final String IMAGES = "images";
@@ -87,7 +89,6 @@ public class ImageViewerActivity extends AppCompatActivity implements OnPageChan
                 R.color.selector_color_checkbox));
 
         mViewPager.setAdapter(new ImageViewerAdapter(getSupportFragmentManager()));
-        mViewPager.addOnPageChangeListener(this);
         mViewPager.setCurrentItem(mClickPosition);
 
 
@@ -111,17 +112,15 @@ public class ImageViewerActivity extends AppCompatActivity implements OnPageChan
         activity.startActivityForResult(intent, REQUEST_IMAGE_VIEWER);
     }
 
-    @Override
-    public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-    }
-
-    @Override
+    @OnPageChange(value = R.id.viewPager, callback = Callback.PAGE_SELECTED)
     public void onPageSelected(int position) {
-        mTextTitle.setText(getString(R.string.title_image_viewer, position, mImages.size()));
+        mTextTitle.setText(getString(R.string.title_image_viewer, position + 1, mImages.size()));
     }
 
-    @Override
-    public void onPageScrollStateChanged(int state) {
+    @OnClick(R.id.btn_back)
+    void onBack() {
+        setResult(RESULT_CANCELED);
+        finish();
     }
 
     class ImageViewerAdapter extends FragmentStatePagerAdapter {
