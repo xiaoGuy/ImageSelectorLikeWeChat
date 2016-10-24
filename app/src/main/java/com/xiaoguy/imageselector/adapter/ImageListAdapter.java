@@ -28,15 +28,17 @@ import butterknife.ButterKnife;
  */
 public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
+    private static final String TAG = ImageListAdapter.class.getSimpleName();
+
     private static final float SELECTED_ALPHA = 0.5F;
     private static final float UNSELECTED_ALPHA = 1.0F;
-    private static final int TYPE_ITEM_CAMERA = 0;
-    private static final int TYPE_ITEM_IMAGE  = 1;
+    private static final int TYPE_ITEM_CAMERA = 649;
+    private static final int TYPE_ITEM_IMAGE = 86;
 
     /**
      * 最多可以选中的图片数量
      */
-    private static final int MAX_SELECTED = 9;
+    private static final int DEFAULT_MAX_SELECTED_SIZE = 9;
 
     private Context mContext;
 
@@ -54,6 +56,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
      * 是否显示拍照按钮
      */
     private boolean mCameraEnabled = true;
+    private int mMaxSelectedSize = DEFAULT_MAX_SELECTED_SIZE;
 
     private OnImageOperateListener mOnImageOperateListener;
 
@@ -87,22 +90,13 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         void onImageSelected(List<String> selectedImages);
     }
 
-    public ImageListAdapter(Context context,ArrayList<String> images) {
+    public ImageListAdapter(Context context, ArrayList<String> images) {
         mImages = images;
-        mSelectedImages = new ArrayList<>(MAX_SELECTED);
+        mSelectedImages = new ArrayList<>(mMaxSelectedSize);
     }
 
     public void setOnImageOperateListener(OnImageOperateListener onImageOperateListener) {
         mOnImageOperateListener = onImageOperateListener;
-    }
-
-    public void setCameraEnabled(boolean enabled) {
-        mCameraEnabled = enabled;
-    }
-
-    public void setImages(ArrayList<String> images) {
-        mImages = images;
-        notifyDataSetChanged();
     }
 
     @Override
@@ -148,6 +142,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 placeholder(R.drawable.shape_placeholder).
                 error(R.drawable.shape_placeholder).
                 centerCrop().
+                thumbnail(0.1f).
                 into(itemImageHolder.mImage);
 
         // 还原选中状态
@@ -179,21 +174,25 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 // 使用的是 SpecialCheckBox ，点击以后并不会选中或取消选中，只能通过 setChecked()
                 final boolean checked = itemImageHolder.mCheckBox.isChecked();
                 // 如果选择数量到达了最大值则不能选中
-                if (! checked && mSelectedImages.size() >= MAX_SELECTED) {
+                if (! checked && mSelectedImages.size() >= mMaxSelectedSize) {
                     if (mOnImageOperateListener != null) {
-                        mOnImageOperateListener.onImageSelectedOverflow(MAX_SELECTED);
+                        mOnImageOperateListener.onImageSelectedOverflow(mMaxSelectedSize);
                     }
                     return;
                 }
                 itemImageHolder.mCheckBox.doToggle();
-                onImageCheckedChanged(itemImageHolder.mImage, ! checked, position);
+                if (mCameraEnabled) {
+                    onImageCheckedChanged(itemImageHolder.mImage, ! checked, position - 1);
+                } else {
+                    onImageCheckedChanged(itemImageHolder.mImage, ! checked, position);   
+                }
             }
         });
     }
 
     @Override
     public int getItemCount() {
-        return mImages.size();
+        return mCameraEnabled ? mImages.size() + 1 : mImages.size();
     }
 
     @Override
@@ -204,12 +203,34 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         return TYPE_ITEM_IMAGE;
     }
 
-    public void setMaxSelected() {
-
+    public void setMaxSelected(int max) {
+        mMaxSelectedSize = max;
     }
 
     public int getMaxSelected() {
-        return MAX_SELECTED;
+        return mMaxSelectedSize;
+    }
+
+    public void setCameraEnabled(boolean enabled) {
+        mCameraEnabled = enabled;
+    }
+
+    public void setImages(ArrayList<String> images) {
+        mImages = images;
+        notifyDataSetChanged();
+    }
+
+    public ArrayList<String> getImages() {
+        return mImages;
+    }
+
+    public void updateSelectedImages(ArrayList<String> selectedImages) {
+        mSelectedImages = selectedImages;
+        notifyDataSetChanged();
+    }
+
+    public ArrayList<String> getSelectedImages() {
+        return mSelectedImages;
     }
 
     private void onImageCheckedChanged(ImageView imageView, boolean isChecked, int position) {

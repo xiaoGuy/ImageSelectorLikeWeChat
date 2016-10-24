@@ -16,7 +16,6 @@ import android.os.Message;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images.Media;
 import android.support.annotation.NonNull;
-import android.support.annotation.StringRes;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetBehavior.BottomSheetCallback;
 import android.support.design.widget.CoordinatorLayout;
@@ -42,6 +41,7 @@ import com.xiaoguy.imageselector.bean.ImageFolder;
 import com.xiaoguy.imageselector.ui.DividerItemDecoration;
 import com.xiaoguy.imageselector.ui.SimpleGridItemDecoration;
 import com.xiaoguy.imageselector.util.DrawableUtil;
+import com.xiaoguy.imageselector.util.WidgetUtil;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -73,6 +73,10 @@ public class ImageListActivity extends PermissionActivity implements
     private static final int REQUEST_TAKE_PHOTO =422;
     private static final int REQUEST_STORAGE_SETTING = 999;
 
+    @BindView(R.id.btn_back)
+    ImageView mBtnBack;
+    @BindView(R.id.view_divider)
+    View mViewDivider;
     @BindView(R.id.text_btnOtherFolder)
     TextView mTextBtnOtherFolder;
     @BindView(R.id.btn_send)
@@ -97,7 +101,6 @@ public class ImageListActivity extends PermissionActivity implements
     RecyclerView mRecyclerViewImageFolderList;
     @BindView(R.id.layout_emptyView)
     ViewGroup mLayoutEmptyView;
-
     private ProgressDialog mProgressDialog;
 
     /**
@@ -114,6 +117,8 @@ public class ImageListActivity extends PermissionActivity implements
         }
     };
 
+    private WidgetUtil mWidgetUtil;
+
     /**
      * 手机中所有的图片目录
      */
@@ -123,11 +128,6 @@ public class ImageListActivity extends PermissionActivity implements
      * 手机中的所有图片
      */
     private ArrayList<String> mAllImages = new ArrayList<>();
-
-    /**
-     * 当前要显示的图片集合
-     */
-//    private List<String> mCurrentImages = new ArrayList<>();
 
     /**
      * 拍摄的照片
@@ -163,6 +163,11 @@ public class ImageListActivity extends PermissionActivity implements
     }
 
     private void initView() {
+        mWidgetUtil = new WidgetUtil();
+
+        mViewDivider.setVisibility(View.GONE);
+        mBtnBack.setVisibility(View.GONE);
+        mBtnSend.setEnabled(false);
         mTextTitleFolderName.setText(R.string.all_image);
 
         mImageListAdapter = new ImageListAdapter(this, mAllImages);
@@ -352,7 +357,7 @@ public class ImageListActivity extends PermissionActivity implements
         // 创建保存拍摄的照片的目录失败
         if (createPhotoDirectory() == null) {
             Log.w(TAG, "create photo directory failed!");
-            showToast(R.string.take_photo_error);
+            mWidgetUtil.showToast(this, R.string.take_photo_error);
             return;
         }
 
@@ -398,6 +403,13 @@ public class ImageListActivity extends PermissionActivity implements
         return mPhotoDirectory;
     }
 
+    @OnClick(R.id.btn_preview)
+    void previewSelectedImages() {
+        ArrayList<String> selectedImages = mImageListAdapter.getSelectedImages();
+        ImageViewerActivity.startImageViewActivity(this, 0, mImageListAdapter.getMaxSelected(),
+                mImageListAdapter.getSelectedImages(), mImageListAdapter.getSelectedImages());
+    }
+
     /**
      * 显示所有的图片目录
      */
@@ -434,18 +446,6 @@ public class ImageListActivity extends PermissionActivity implements
         mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
     }
 
-    private void showToast(@StringRes int stringResId) {
-        showToast(getString(stringResId));
-    }
-
-    private void showToast(String text) {
-        if (mToast == null) {
-            mToast = Toast.makeText(this, text, Toast.LENGTH_SHORT);
-        }
-        mToast.setText(text);
-        mToast.show();
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_STORAGE_SETTING) {
@@ -453,7 +453,7 @@ public class ImageListActivity extends PermissionActivity implements
 
         } else if (requestCode == REQUEST_CAMERA_SETTING) {
             requestPermission(permission.CAMERA, false);
-
+        // 从拍照界面返回
         } else if (requestCode == REQUEST_TAKE_PHOTO) {
             if (resultCode == RESULT_CANCELED) {
                 // 取消拍照后要删除创建出的文件
@@ -465,9 +465,21 @@ public class ImageListActivity extends PermissionActivity implements
                 // 将拍摄的照片保存到数据库中，这样才能从 MediaStore 中读取到
                 sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,
                         Uri.fromFile(mPhotoFile)));
+                ImageViewerActivity.startImageViewActivity(this, mPhotoFile.getAbsolutePath());
             }
-        } else if (requestCode == ImageViewerActivity.REQUEST_IMAGE_VIEWER
-                && resultCode == RESULT_OK) {
+        // 从查看图片界面返回
+        } else if (requestCode == ImageViewerActivity.REQUEST_IMAGE_VIEWER) {
+            if (resultCode == RESULT_OK) {
+
+            } else {
+                // 如果是单张预览模式则 data 为 null
+                if (data != null) {
+                    ArrayList<String> selectedImages =
+                            data.getStringArrayListExtra(ImageViewerActivity.SELECTED_IMAGES);
+                    mImageListAdapter.updateSelectedImages(selectedImages);
+                    updateBtnText(selectedImages);
+                }
+            }
         }
     }
 
@@ -479,16 +491,21 @@ public class ImageListActivity extends PermissionActivity implements
 
     @Override
     public void onImageClick(int position, ArrayList<String> images, ArrayList<String> selectedImages) {
-        ImageViewerActivity.startImageViewActivity(this, position, images, selectedImages);
+        ImageViewerActivity.startImageViewActivity(this, position,
+                mImageListAdapter.getMaxSelected(), images, selectedImages);
     }
 
     @Override
     public void onImageSelectedOverflow(int max) {
-        showToast(getString(R.string.max_selected, max));
+        mWidgetUtil.showToast(this, getString(R.string.max_selected, max));
     }
 
     @Override
     public void onImageSelected(List<String> selectedImages) {
+        updateBtnText(selectedImages);
+    }
+
+    private void updateBtnText(List<String> selectedImages) {
         if (selectedImages.size() == 0) {
             mBtnSend.setEnabled(false);
             mBtnPreview.setEnabled(false);

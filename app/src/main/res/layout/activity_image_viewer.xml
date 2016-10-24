@@ -23,7 +23,7 @@
         android:layout_alignParentBottom="true"
         android:background="@color/colorTranslucenceBlack">
 
-        <android.support.v7.widget.AppCompatCheckBox
+        <com.xiaoguy.imageselector.ui.SpecialCheckBox
             android:id="@+id/checkbox_select"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
