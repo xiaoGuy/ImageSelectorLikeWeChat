@@ -39,7 +39,7 @@
 
     <!-- 发送按钮 -->
     <Button
-        android:id="@+id/btn_send"
+        android:id="@+id/btn_finish"
         android:layout_alignParentRight="true"
         android:layout_width="wrap_content"
         android:layout_height="30dp"
@@ -48,7 +48,7 @@
         android:minWidth="50dp"
         android:paddingLeft="10dp"
         android:paddingRight="10dp"
-        android:text="@string/send"
+        android:text="@string/finish"
         android:textColor="@color/selector_color_btn_send"
         android:textSize="15sp"
         android:background="@drawable/selector_btn_send"/>

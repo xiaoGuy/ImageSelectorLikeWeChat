@@ -229,6 +229,14 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         notifyDataSetChanged();
     }
 
+    public void clearSelectedImages() {
+        mSelectedImages.clear();
+        if (mOnImageOperateListener != null) {
+            mOnImageOperateListener.onImageSelected(mSelectedImages);
+        }
+        notifyDataSetChanged();
+    }
+
     public ArrayList<String> getSelectedImages() {
         return mSelectedImages;
     }
@@ -260,7 +268,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             super(itemView);
             ButterKnife.bind(itemView);
 
-            mImage = (ImageView) itemView.findViewById(R.id.image);
+            mImage = (ImageView) itemView.findViewById(R.id.image_sent);
             mCheckBox = (SpecialCheckBox) itemView.findViewById(R.id.checkbox);
 
             mCheckBox.setButtonDrawable(DrawableUtil.setTintList

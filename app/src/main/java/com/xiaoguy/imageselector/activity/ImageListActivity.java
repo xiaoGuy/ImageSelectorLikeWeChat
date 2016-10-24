@@ -79,7 +79,7 @@ public class ImageListActivity extends PermissionActivity implements
     View mViewDivider;
     @BindView(R.id.text_btnOtherFolder)
     TextView mTextBtnOtherFolder;
-    @BindView(R.id.btn_send)
+    @BindView(R.id.btn_finish)
     Button mBtnSend;
     @BindView(R.id.image_btnOtherFolder)
     ImageView mImageBtnOtherFolder;
@@ -470,7 +470,9 @@ public class ImageListActivity extends PermissionActivity implements
         // 从查看图片界面返回
         } else if (requestCode == ImageViewerActivity.REQUEST_IMAGE_VIEWER) {
             if (resultCode == RESULT_OK) {
-
+                ArrayList<String> selectedImages =
+                        data.getStringArrayListExtra(ImageViewerActivity.SELECTED_IMAGES);
+                sendSelectedImages(selectedImages);
             } else {
                 // 如果是单张预览模式则 data 为 null
                 if (data != null) {
@@ -481,6 +483,16 @@ public class ImageListActivity extends PermissionActivity implements
                 }
             }
         }
+    }
+
+    @OnClick(R.id.btn_finish)
+    void send() {
+        sendSelectedImages(mImageListAdapter.getSelectedImages());
+    }
+
+    private void sendSelectedImages(ArrayList<String> selectedImages) {
+        SentImageViewerActivity.startPreviewSentActivity(this, selectedImages);
+        mImageListAdapter.clearSelectedImages();
     }
 
     //***************************** OnImageOperateListener ********************************
@@ -509,13 +521,13 @@ public class ImageListActivity extends PermissionActivity implements
         if (selectedImages.size() == 0) {
             mBtnSend.setEnabled(false);
             mBtnPreview.setEnabled(false);
-            mBtnSend.setText(R.string.send);
+            mBtnSend.setText(R.string.finish);
             mBtnPreview.setText(R.string.preview);
         } else {
             mBtnSend.setEnabled(true);
             mBtnPreview.setEnabled(true);
             String str = String.format(PATTERN, selectedImages.size(), mImageListAdapter.getMaxSelected());
-            mBtnSend.setText(getString(R.string.send) + str);
+            mBtnSend.setText(getString(R.string.finish) + str);
             str = String.format(PATTERN_2, selectedImages.size());
             mBtnPreview.setText(getString(R.string.preview) + str);
         }

@@ -23,7 +23,6 @@ import com.xiaoguy.imageselector.util.DrawableUtil;
 import com.xiaoguy.imageselector.util.WidgetUtil;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -56,7 +55,7 @@ public class ImageViewerActivity extends AppCompatActivity {
     ViewGroup mLayoutBottomBar;
     @BindView(R.id.layout_title_bar)
     ViewGroup mLayoutTitleBar;
-    @BindView(R.id.btn_send)
+    @BindView(R.id.btn_finish)
     Button mBtnSend;
     @BindView(R.id.checkbox_select)
     SpecialCheckBox mCheckboxSelect;
@@ -67,7 +66,7 @@ public class ImageViewerActivity extends AppCompatActivity {
 
     private WidgetUtil mWidgetUtil;
 
-    private List<String> mImages;
+    private ArrayList<String> mImages;
     private ArrayList<String> mSelectedImages;
     private int mMaxSelectedSize;
     private int mCurrentPosition;
@@ -171,10 +170,6 @@ public class ImageViewerActivity extends AppCompatActivity {
     }
 
     @OnClick(R.id.btn_back)
-    void onBack() {
-        onBackPressed();
-    }
-
     @Override
     public void onBackPressed() {
         if (! mIsSingleImagePreview) {
@@ -201,17 +196,29 @@ public class ImageViewerActivity extends AppCompatActivity {
         updateSendBtnText(mSelectedImages.size(), mMaxSelectedSize);
     }
 
-    @OnClick(R.id.btn_send)
-    void send() {
-        setResult(RESULT_OK);
+    @OnClick(R.id.btn_finish)
+    void sendSelectedImages() {
+        Intent intent = new Intent();
+
+        if (mIsSingleImagePreview) {
+            intent.putStringArrayListExtra(SELECTED_IMAGES, mImages);
+        // 点击完成时如果还没有选中任何图片则选择当前的图片
+        } else if (mSelectedImages.size() == 0) {
+            mSelectedImages.add(mImages.get(mCurrentPosition));
+            intent.putStringArrayListExtra(SELECTED_IMAGES, mSelectedImages);
+        } else {
+            intent.putStringArrayListExtra(SELECTED_IMAGES, mSelectedImages);
+        }
+
+        setResult(RESULT_OK, intent);
         finish();
     }
 
     private void updateSendBtnText(int selectedSize, int maxSelectedSize) {
         if (selectedSize == 0) {
-            mBtnSend.setText(R.string.send);
+            mBtnSend.setText(R.string.finish);
         } else {
-            mBtnSend.setText(getString(R.string.send_2, selectedSize, maxSelectedSize));
+            mBtnSend.setText(getString(R.string.finish_2, selectedSize, maxSelectedSize));
         }
     }
 
