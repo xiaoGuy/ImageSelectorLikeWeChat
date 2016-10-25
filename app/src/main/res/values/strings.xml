@@ -8,7 +8,7 @@
     <string name="setting">设置</string>
     <string name="need_storage_permission">显示图片需要存储权限</string>
     <string name="need_camera_permission">拍照需要相机权限</string>
-    <string name="max_selected">最多选择 %1$d 张</string>
+    <string name="max_selected">最多选择只能选择 %1$d 张</string>
     <string name="take_photo">拍摄照片</string>
 
     <string name="set_storage_permission">显示图片需要存储权限，是否设置</string>
@@ -18,9 +18,9 @@
 
     <string name="no_image">还没有图片哦</string>
     <string name="all_image">所有图片</string>
-    <string name="finish">发送</string>
-    <string name="finish_2">发送(%1$d/%2$d)</string>
-    <string name="sent_image">已发送的图片</string>
+    <string name="finish">完成</string>
+    <string name="finish_2">完成(%1$d/%2$d)</string>
+    <string name="sent_image">选择的图片</string>
     <string name="preview">预览</string>
     <string name="select">选择</string>
     <string name="title_image_viewer">%1$d/%2$d</string>

@@ -4,16 +4,82 @@
     android:id="@+id/layout"
     android:clickable="true"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/colorStatusBar">
 
     <android.support.v4.view.ViewPager
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="wrap_content"/>
+
+    <!-- fitSystemWindow -->
+    <View
+        android:id="@+id/view_fitSystemWindow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <!-- 标题栏 -->
+    <RelativeLayout
+        android:id="@+id/bar_title"
+        android:layout_below="@id/view_fitSystemWindow"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/title_bar_height"
+        android:orientation="horizontal"
+        android:background="@color/colorPrimary">
+
+        <!-- 返回按钮 -->
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:padding="10dp"
+            android:clickable="true"
+            android:src="@drawable/ic_left_arrow"
+            android:background="@drawable/selector_btn_usual"/>
+
+        <!-- 分割线 -->
+        <View
+            android:id="@+id/view_divider"
+            android:layout_toRightOf="@id/btn_back"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:background="#2E2E32"/>
+
+        <!-- 标题 -->
+        <TextView
+            android:layout_toRightOf="@id/view_divider"
+            android:id="@+id/text_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_centerVertical="true"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"/>
+
+        <!-- 发送按钮 -->
+        <Button
+            android:id="@+id/btn_finish"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_margin="8dp"
+            android:layout_centerVertical="true"
+            android:minWidth="50dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:text="@string/finish"
+            android:textColor="@color/selector_color_btn_send"
+            android:textSize="15sp"
+            android:background="@drawable/selector_btn_send"/>
+    </RelativeLayout>
 
     <!-- ActionBar -->
-    <include android:id="@+id/layout_title_bar"
-             layout="@layout/include_title_bar"/>
+    <!--<include android:id="@+id/bar_title"
+             android:visibility="visible"
+             layout="@layout/include_title_bar"/>-->
+
 
     <!-- 底部栏 -->
     <FrameLayout

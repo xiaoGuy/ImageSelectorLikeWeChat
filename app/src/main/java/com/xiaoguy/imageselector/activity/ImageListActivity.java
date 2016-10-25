@@ -73,6 +73,8 @@ public class ImageListActivity extends PermissionActivity implements
     private static final int REQUEST_TAKE_PHOTO =422;
     private static final int REQUEST_STORAGE_SETTING = 999;
 
+//    @BindView(R.id.layout_title_bar)
+//    ViewGroup mLayoutTitleBar;
     @BindView(R.id.btn_back)
     ImageView mBtnBack;
     @BindView(R.id.view_divider)

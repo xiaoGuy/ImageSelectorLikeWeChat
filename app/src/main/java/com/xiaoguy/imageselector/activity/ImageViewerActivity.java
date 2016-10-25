@@ -10,6 +10,7 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.View.OnSystemUiVisibilityChangeListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -20,6 +21,7 @@ import com.xiaoguy.imageselector.R;
 import com.xiaoguy.imageselector.ui.ImageViewerFragment;
 import com.xiaoguy.imageselector.ui.SpecialCheckBox;
 import com.xiaoguy.imageselector.util.DrawableUtil;
+import com.xiaoguy.imageselector.util.ScreenUtil;
 import com.xiaoguy.imageselector.util.WidgetUtil;
 
 import java.util.ArrayList;
@@ -47,13 +49,20 @@ public class ImageViewerActivity extends AppCompatActivity {
     private static final String PATH = "path";
 
 
+    /**
+     * 在该界面中设置了布局内容可以延伸到状态栏，但是这样一来标题栏就会被遮挡
+     * 如果在根布局中使用 fitSystemWindow 的话又会导致图片无法全屏显示
+     * 所以使用该 View 来占据状态栏的位置
+     */
+    @BindView(R.id.view_fitSystemWindow)
+    View mViewFitSystemWindow;
     @BindView(R.id.btn_back)
     ImageView mBtnBack;
     @BindView(R.id.text_title)
     TextView mTextTitle;
     @BindView(R.id.layout_bottom_bar)
     ViewGroup mLayoutBottomBar;
-    @BindView(R.id.layout_title_bar)
+    @BindView(R.id.bar_title)
     ViewGroup mLayoutTitleBar;
     @BindView(R.id.btn_finish)
     Button mBtnSend;
@@ -63,6 +72,8 @@ public class ImageViewerActivity extends AppCompatActivity {
     RelativeLayout mLayout;
     @BindView(R.id.viewPager)
     ViewPager mViewPager;
+
+    View mDecorView;
 
     private WidgetUtil mWidgetUtil;
 
@@ -77,9 +88,11 @@ public class ImageViewerActivity extends AppCompatActivity {
     private String mTakenPhotoPath;
 
     /**
-     *  是否只是预览单张图片，如果是拍完照片后的预览则为 true
+     * 是否只是预览单张图片，如果是拍完照片后的预览则为 true
      */
     private boolean mIsSingleImagePreview;
+
+    private boolean mIsSystemUiShown = true;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -112,9 +125,26 @@ public class ImageViewerActivity extends AppCompatActivity {
     }
 
     private void initView() {
-        mWidgetUtil = new WidgetUtil();
+        mDecorView = getWindow().getDecorView();
+        mDecorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        // 监听 SystemUI(StatusBar 跟 NavigationBar) 的状态
+        mDecorView.setOnSystemUiVisibilityChangeListener(new OnSystemUiVisibilityChangeListener() {
+            @Override
+            public void onSystemUiVisibilityChange(int visibility) {
+                // SystemUI 为显示状态
+                if (visibility == 0) {
+                    mIsSystemUiShown = true;
+                } else {
+                    mIsSystemUiShown = false;
+                }
+            }
+        });
 
-        if (! mIsSingleImagePreview) {
+        mWidgetUtil = new WidgetUtil();
+        // 设置该 View 的高度为状态栏的高度，起到 fitSystemWindow 的作用
+        mViewFitSystemWindow.getLayoutParams().height = ScreenUtil.getStatusBarHeight(this);
+
+        if (!mIsSingleImagePreview) {
             mCheckboxSelect.setButtonDrawable(DrawableUtil.setTintList(this, R.drawable.selector_checkbox,
                     R.color.selector_color_checkbox));
             updateSendBtnText(mSelectedImages.size(), mMaxSelectedSize);
@@ -154,7 +184,7 @@ public class ImageViewerActivity extends AppCompatActivity {
      * 单张预览模式，即预览刚拍完的照片
      *
      * @param activity 条转过来的 Activity
-     * @param path 拍摄的照片的路径
+     * @param path     拍摄的照片的路径
      */
     public static void startImageViewActivity(Activity activity, String path) {
         Intent intent = new Intent(activity, ImageViewerActivity.class);
@@ -172,7 +202,7 @@ public class ImageViewerActivity extends AppCompatActivity {
     @OnClick(R.id.btn_back)
     @Override
     public void onBackPressed() {
-        if (! mIsSingleImagePreview) {
+        if (!mIsSingleImagePreview) {
             Intent intent = new Intent();
             intent.putStringArrayListExtra(SELECTED_IMAGES, mSelectedImages);
             setResult(RESULT_CANCELED, intent);
@@ -183,7 +213,7 @@ public class ImageViewerActivity extends AppCompatActivity {
     @OnClick(R.id.checkbox_select)
     void onCheckBoxClicked() {
         final boolean isChecked = mCheckboxSelect.isChecked();
-        if (! isChecked && mSelectedImages.size() >= mMaxSelectedSize) {
+        if (!isChecked && mSelectedImages.size() >= mMaxSelectedSize) {
             mWidgetUtil.showToast(this, getString(R.string.max_selected, mMaxSelectedSize));
             return;
         }
@@ -202,7 +232,7 @@ public class ImageViewerActivity extends AppCompatActivity {
 
         if (mIsSingleImagePreview) {
             intent.putStringArrayListExtra(SELECTED_IMAGES, mImages);
-        // 点击完成时如果还没有选中任何图片则选择当前的图片
+            // 点击完成时如果还没有选中任何图片则选择当前的图片
         } else if (mSelectedImages.size() == 0) {
             mSelectedImages.add(mImages.get(mCurrentPosition));
             intent.putStringArrayListExtra(SELECTED_IMAGES, mSelectedImages);
@@ -246,6 +276,45 @@ public class ImageViewerActivity extends AppCompatActivity {
     private void displayCurrentImagePosition(TextView textView, int position, int count) {
         textView.setText(getString(R.string.title_image_viewer, position, count));
     }
+
+    public void toggleBarVisibility() {
+        if (mIsSystemUiShown) {
+            mDecorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LOW_PROFILE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            hideUIControls(mLayoutTitleBar, mLayoutBottomBar);
+        } else {
+            mDecorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            showUIControls(mLayoutTitleBar, mLayoutBottomBar);
+        }
+    }
+
+    private void showUIControls(View... views) {
+        for (View view : views) {
+            view.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void hideUIControls(View... views) {
+        for (View view : views) {
+            view.setVisibility(View.GONE);
+        }
+    }
+
+//    private void hideStatusBar() {
+//        WindowManager.LayoutParams attrs = getWindow().getAttributes();
+//        attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+//        getWindow().setAttributes(attrs);
+//    }
+//
+//    private void showStatusBar() {
+//        WindowManager.LayoutParams attrs = getWindow().getAttributes();
+//        attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+//        getWindow().setAttributes(attrs);
+//    }
 
     class ImageViewerAdapter extends FragmentStatePagerAdapter {
 

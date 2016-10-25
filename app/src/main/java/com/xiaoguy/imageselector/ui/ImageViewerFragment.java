@@ -1,5 +1,6 @@
 package com.xiaoguy.imageselector.ui;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -12,6 +13,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.xiaoguy.imageselector.R;
+import com.xiaoguy.imageselector.activity.ImageViewerActivity;
 import com.xiaoguy.imageselector.util.ScreenUtil;
 
 import java.io.File;
@@ -65,7 +67,10 @@ public class ImageViewerFragment extends Fragment {
         photoView.setOnPhotoTapListener(new OnPhotoTapListener() {
             @Override
             public void onPhotoTap(View view, float x, float y) {
-
+                Activity activity = getActivity();
+                if (activity instanceof ImageViewerActivity) {
+                    ((ImageViewerActivity) activity).toggleBarVisibility();
+                }
             }
         });
 
