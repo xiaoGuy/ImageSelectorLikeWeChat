@@ -1,5 +1,9 @@
 package com.xiaoguy.imageselector.activity;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -48,6 +52,9 @@ public class ImageViewerActivity extends AppCompatActivity {
     private static final String MAX_SELECTED = "max_selected";
     private static final String PATH = "path";
 
+    private static final String PROPERTY = "translationY";
+    private static final int ANIM_DURATION = 250;
+
 
     /**
      * 在该界面中设置了布局内容可以延伸到状态栏，但是这样一来标题栏就会被遮挡
@@ -81,6 +88,23 @@ public class ImageViewerActivity extends AppCompatActivity {
     private ArrayList<String> mSelectedImages;
     private int mMaxSelectedSize;
     private int mCurrentPosition;
+
+    AnimatorSet mOutAnimators;
+    AnimatorSet mInAnimators;
+
+
+
+    ObjectAnimator mTtitleBarOutAnimator;
+    ObjectAnimator mBottomBarOutAnimator;
+    ObjectAnimator mTitleBarInAnimator;
+    ObjectAnimator mBottomBarInAnimator;
+
+    boolean mInitAnimator;
+
+    /**
+     * 动画是否结束
+     */
+    boolean mAnimationEnd = true;
 
     /**
      * 拍摄的照片的路径
@@ -157,6 +181,49 @@ public class ImageViewerActivity extends AppCompatActivity {
 
         displayCurrentImagePosition(mTextTitle, mCurrentPosition + 1, mImages.size());
         setCheckState(mCurrentPosition);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        if (hasFocus && ! mInitAnimator) {
+            initAnimator();
+        }
+    }
+
+    private void initAnimator() {
+        mTtitleBarOutAnimator = ObjectAnimator.ofFloat
+                (mLayoutTitleBar, PROPERTY, mLayoutTitleBar.getTranslationY(),
+                        -(mLayoutTitleBar.getHeight() + ScreenUtil.getStatusBarHeight(this)));
+        mBottomBarOutAnimator = ObjectAnimator.ofFloat
+                (mLayoutBottomBar, PROPERTY, mLayoutBottomBar.getTranslationY(),
+                        mLayoutBottomBar.getHeight() + ScreenUtil.getStatusBarHeight(this));
+
+        mTitleBarInAnimator = ObjectAnimator.ofFloat
+                (mLayoutTitleBar, PROPERTY, -mLayoutTitleBar.getHeight(), 0);
+        mBottomBarInAnimator = ObjectAnimator.ofFloat
+                (mLayoutBottomBar, PROPERTY, mLayoutBottomBar.getHeight(), 0);
+
+        mOutAnimators = new AnimatorSet();
+        mInAnimators = new AnimatorSet();
+        mOutAnimators.play(mTtitleBarOutAnimator).with(mBottomBarOutAnimator);
+        mInAnimators.play(mTitleBarInAnimator).with(mBottomBarInAnimator);
+        mOutAnimators.setDuration(ANIM_DURATION);
+        mInAnimators.setDuration(ANIM_DURATION);
+
+        AnimatorListenerAdapter listener = new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                mAnimationEnd = false;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                mAnimationEnd = true;
+            }
+        };
+
+        mOutAnimators.addListener(listener);
+        mInAnimators.addListener(listener);
     }
 
     /**
@@ -293,15 +360,17 @@ public class ImageViewerActivity extends AppCompatActivity {
     }
 
     private void showUIControls(View... views) {
-        for (View view : views) {
-            view.setVisibility(View.VISIBLE);
-        }
+        mInAnimators.start();
+//        for (View view : views) {
+//            view.setVisibility(View.VISIBLE);
+//        }
     }
 
     private void hideUIControls(View... views) {
-        for (View view : views) {
-            view.setVisibility(View.GONE);
-        }
+        mOutAnimators.start();
+//        for (View view : views) {
+//            view.setVisibility(View.GONE);
+//        }
     }
 
 //    private void hideStatusBar() {
